@@ -976,7 +976,8 @@ export default function SideBar({
     zohoModule === "ServiceCompletions" ||
     zohoModule === "Deals" ||
     zohoModule === "Bids" ||
-    zohoModule === "Vendor_Invoices";
+    zohoModule === "Vendor_Invoices" ||
+    zohoModule === "Accounts";
   const customViewsApiUrl =
     zohoModule === "Contracts" ? "/api/contracts/custom-views"
     : zohoModule === "Vendors" ? "/api/vendors/custom-views"
@@ -984,6 +985,7 @@ export default function SideBar({
     : zohoModule === "Deals" ? "/api/sow/custom-views"
     : zohoModule === "Bids" ? "/api/bids/custom-views"
     : zohoModule === "Vendor_Invoices" ? "/api/vendor-invoices/custom-views"
+    : zohoModule === "Accounts" ? "/api/accounts/custom-views"
     : `/api/${encodeURIComponent(zohoModule.toLowerCase())}/custom-views`;
   const [sections, setSections] = useState<ContractFilterSection[]>([]);
   const [fieldMeta, setFieldMeta] = useState<ContractFilterFieldMeta[]>([]);

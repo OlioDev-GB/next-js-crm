@@ -27,6 +27,9 @@ export const BID_ZOHO_RECORD_URL = zohoTabUrl("Bids");
 /** Vendor Invoices tab name in oliogroup. */
 export const VENDOR_INVOICE_ZOHO_RECORD_URL = zohoTabUrl("Vendor_Invoices");
 
+/** Client/Sites → Accounts. */
+export const ACCOUNT_ZOHO_RECORD_URL = zohoTabUrl("Accounts");
+
 function recordUrl(base: string, recordId: string) {
   return `${base}/${encodeURIComponent(recordId.trim())}`;
 }
@@ -53,4 +56,8 @@ export function getBidZohoRecordUrl(recordId: string) {
 
 export function getVendorInvoiceZohoRecordUrl(recordId: string) {
   return recordUrl(VENDOR_INVOICE_ZOHO_RECORD_URL, recordId);
+}
+
+export function getAccountZohoRecordUrl(recordId: string) {
+  return recordUrl(ACCOUNT_ZOHO_RECORD_URL, recordId);
 }

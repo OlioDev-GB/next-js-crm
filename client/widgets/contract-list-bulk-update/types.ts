@@ -9,10 +9,11 @@ export type BulkUpdateModuleName =
   | "ServiceCompletions"
   | "Deals"
   | "Bids"
-  | "Vendor_Invoices";
+  | "Vendor_Invoices"
+  | "Accounts";
 
 export type ContractListBulkUpdatePayload = {
-  /** Zoho module API name — required by Deluge (`Contracts` | `Vendors` | `ServiceCompletions` | `Deals` | `Bids` | `Vendor_Invoices`). */
+  /** Zoho module API name — required by Deluge (`Contracts` | `Vendors` | `ServiceCompletions` | `Deals` | `Bids` | `Vendor_Invoices` | `Accounts`). */
   moduleName: BulkUpdateModuleName;
   /** Record IDs to update. */
   recordIds: string[];

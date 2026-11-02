@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import {
   ArrowRight,
   Briefcase,
+  Building2,
   ClipboardCheck,
   Database,
   FileText,
@@ -78,6 +79,14 @@ const MODULES: ModuleCard[] = [
     icon: Receipt,
     useLiveRecordCount: true,
     liveCountPath: "/api/vendor-invoices?page=1",
+  },
+  {
+    title: "Client/Sites",
+    description: "Browse and manage client and site accounts.",
+    href: "/accounts",
+    icon: Building2,
+    useLiveRecordCount: true,
+    liveCountPath: "/api/accounts?page=1",
   },
 ];
 

@@ -21,6 +21,7 @@ const ALLOWED_MODULES = new Set<BulkUpdateModuleName>([
   "Deals",
   "Bids",
   "Vendor_Invoices",
+  "Accounts",
 ]);
 
 function defaultEntityLabel(moduleName: BulkUpdateModuleName) {
@@ -29,6 +30,7 @@ function defaultEntityLabel(moduleName: BulkUpdateModuleName) {
   if (moduleName === "Deals") return "SOW";
   if (moduleName === "Bids") return "bid";
   if (moduleName === "Vendor_Invoices") return "vendor invoice";
+  if (moduleName === "Accounts") return "client/site";
   return "contract";
 }
 
@@ -100,7 +102,7 @@ export async function runContractListBulkUpdate(
     return {
       ok: false,
       message:
-        'moduleName must be "Contracts", "Vendors", "ServiceCompletions", "Deals", "Bids", or "Vendor_Invoices".',
+        'moduleName must be "Contracts", "Vendors", "ServiceCompletions", "Deals", "Bids", "Vendor_Invoices", or "Accounts".',
     };
   }
   if (recordIds.length === 0) {

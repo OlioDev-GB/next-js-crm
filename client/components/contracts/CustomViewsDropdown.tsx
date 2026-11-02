@@ -21,12 +21,14 @@ import { SERVICE_COMPLETIONS_ALL_VIEW_FAVORITE_ID } from "@/lib/service-completi
 import { SOW_ALL_VIEW_FAVORITE_ID } from "@/lib/sow/filterPersistence";
 import { BIDS_ALL_VIEW_FAVORITE_ID } from "@/lib/bids/filterPersistence";
 import { VENDOR_INVOICES_ALL_VIEW_FAVORITE_ID } from "@/lib/vendor-invoices/filterPersistence";
+import { ACCOUNTS_ALL_VIEW_FAVORITE_ID } from "@/lib/accounts/filterPersistence";
 import { useFavoriteCustomViews as useContractFavoriteCustomViews } from "@/hooks/contracts/useFavoriteCustomViews";
 import { useVendorFavoriteCustomViews } from "@/hooks/vendors/useVendorFavoriteCustomViews";
 import { useFavoriteCustomViews as useServiceCompletionFavoriteCustomViews } from "@/hooks/service-completions/useFavoriteCustomViews";
 import { useFavoriteCustomViews as useSowFavoriteCustomViews } from "@/hooks/sow/useFavoriteCustomViews";
 import { useFavoriteCustomViews as useBidFavoriteCustomViews } from "@/hooks/bids/useFavoriteCustomViews";
 import { useFavoriteCustomViews as useVendorInvoiceFavoriteCustomViews } from "@/hooks/vendor-invoices/useFavoriteCustomViews";
+import { useFavoriteCustomViews as useAccountFavoriteCustomViews } from "@/hooks/accounts/useFavoriteCustomViews";
 
 function moduleApiBase(zohoModule: string) {
   if (zohoModule === "Contracts") return "/api/contracts";
@@ -35,6 +37,7 @@ function moduleApiBase(zohoModule: string) {
   if (zohoModule === "Deals") return "/api/sow";
   if (zohoModule === "Bids") return "/api/bids";
   if (zohoModule === "Vendor_Invoices") return "/api/vendor-invoices";
+  if (zohoModule === "Accounts") return "/api/accounts";
   return `/api/${encodeURIComponent(zohoModule.toLowerCase())}`;
 }
 
@@ -86,12 +89,14 @@ export function CustomViewsDropdown({
   const sowFavorites = useSowFavoriteCustomViews();
   const bidFavorites = useBidFavoriteCustomViews();
   const vendorInvoiceFavorites = useVendorInvoiceFavoriteCustomViews();
+  const accountFavorites = useAccountFavoriteCustomViews();
   const { isFavorite, toggleFavorite, mergeZohoFavorites } =
     zohoModule === "Vendors" ? vendorFavorites
     : zohoModule === "ServiceCompletions" ? serviceCompletionFavorites
     : zohoModule === "Deals" ? sowFavorites
     : zohoModule === "Bids" ? bidFavorites
     : zohoModule === "Vendor_Invoices" ? vendorInvoiceFavorites
+    : zohoModule === "Accounts" ? accountFavorites
     : contractFavorites;
 
   const allViewLabel =
@@ -100,6 +105,7 @@ export function CustomViewsDropdown({
     : zohoModule === "Deals" ? "All SOWs"
     : zohoModule === "Bids" ? "All Bids"
     : zohoModule === "Vendor_Invoices" ? "All Vendor Invoices"
+    : zohoModule === "Accounts" ? "All Client/Sites"
     : "All Contracts";
   const allViewFavoriteId =
     zohoModule === "Vendors" ? VENDORS_ALL_VIEW_FAVORITE_ID
@@ -107,6 +113,7 @@ export function CustomViewsDropdown({
     : zohoModule === "Deals" ? SOW_ALL_VIEW_FAVORITE_ID
     : zohoModule === "Bids" ? BIDS_ALL_VIEW_FAVORITE_ID
     : zohoModule === "Vendor_Invoices" ? VENDOR_INVOICES_ALL_VIEW_FAVORITE_ID
+    : zohoModule === "Accounts" ? ACCOUNTS_ALL_VIEW_FAVORITE_ID
     : CONTRACTS_ALL_VIEW_FAVORITE_ID;
 
   const apiBase = moduleApiBase(zohoModule);
@@ -319,6 +326,7 @@ export function CustomViewsDropdown({
     setAccessType("only_to_me");
     const preferredApiName =
       zohoModule === "Deals" ? "Stage"
+      : zohoModule === "Accounts" ? "Account_Type"
       : zohoModule === "ServiceCompletions" ||
           zohoModule === "Bids" ||
           zohoModule === "Vendors" ||
@@ -327,17 +335,23 @@ export function CustomViewsDropdown({
       : "Contract_Status";
     const statusField =
       filterFields.find((f) => f.apiName === preferredApiName) ??
-      filterFields.find((f) => f.apiName === "Status" || f.apiName === "Stage");
+      filterFields.find(
+        (f) =>
+          f.apiName === "Status" ||
+          f.apiName === "Stage" ||
+          f.apiName === "Account_Type",
+      );
     setCondition({
       apiName: statusField?.apiName ?? filterFields[0]?.apiName ?? preferredApiName,
       operator: "equals",
       value:
-        statusField?.options?.find((o) => /active|progress|sourcing|submitted|open/i.test(o.value) || /active|progress|sourcing|submitted|open/i.test(o.label))
+        statusField?.options?.find((o) => /active|progress|sourcing|submitted|open|client/i.test(o.value) || /active|progress|sourcing|submitted|open|client/i.test(o.label))
           ?.value ??
         statusField?.options?.[0]?.value ??
         (zohoModule === "Deals" ? "Sourcing Vendor"
         : zohoModule === "Bids" ? "Submitted"
         : zohoModule === "Vendor_Invoices" ? "Open"
+        : zohoModule === "Accounts" ? "Client"
         : "Active"),
     });
   }

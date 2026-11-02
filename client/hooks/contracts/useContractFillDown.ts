@@ -133,7 +133,7 @@ function readFillTargetFromPoint(
 type UseContractFillDownArgs<T extends FillDownRecord = ContractRecord> = {
   contracts: T[];
   setContracts: Dispatch<SetStateAction<T[]>>;
-  /** Zoho module for Deluge `moduleName` (`Contracts` | `Vendors` | `ServiceCompletions` | `Deals` | `Bids` | `Vendor_Invoices`). */
+  /** Zoho module for Deluge `moduleName` (`Contracts` | `Vendors` | `ServiceCompletions` | `Deals` | `Bids` | `Vendor_Invoices` | `Accounts`). */
   moduleName?: BulkUpdateModuleName;
   /** Defaults to Contracts bulk-update API. */
   persistUrl?: string;
