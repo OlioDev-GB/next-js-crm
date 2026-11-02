@@ -36,3 +36,7 @@ export function getVendorZohoRecordUrl(recordId: string) {
 export function getSowZohoRecordUrl(recordId: string) {
   return recordUrl(SOW_ZOHO_RECORD_URL, recordId);
 }
+
+export function getServiceCompletionZohoRecordUrl(recordId: string) {
+  return recordUrl(SERVICE_COMPLETION_ZOHO_RECORD_URL, recordId);
+}

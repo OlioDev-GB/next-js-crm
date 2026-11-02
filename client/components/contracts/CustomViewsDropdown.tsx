@@ -17,7 +17,17 @@ import type { ContractFilterFieldMeta } from "@/lib/contracts/filterTypes";
 import { getOperatorsForDataType } from "@/lib/contracts/filterMeta";
 import { CONTRACTS_ALL_VIEW_FAVORITE_ID } from "@/lib/contracts/filterPersistence";
 import { VENDORS_ALL_VIEW_FAVORITE_ID } from "@/lib/vendors/filterPersistence";
-import { useFavoriteCustomViews } from "@/hooks/contracts/useFavoriteCustomViews";
+import { SERVICE_COMPLETIONS_ALL_VIEW_FAVORITE_ID } from "@/lib/service-completions/filterPersistence";
+import { useFavoriteCustomViews as useContractFavoriteCustomViews } from "@/hooks/contracts/useFavoriteCustomViews";
+import { useVendorFavoriteCustomViews } from "@/hooks/vendors/useVendorFavoriteCustomViews";
+import { useFavoriteCustomViews as useServiceCompletionFavoriteCustomViews } from "@/hooks/service-completions/useFavoriteCustomViews";
+
+function moduleApiBase(zohoModule: string) {
+  if (zohoModule === "Contracts") return "/api/contracts";
+  if (zohoModule === "Vendors") return "/api/vendors";
+  if (zohoModule === "ServiceCompletions") return "/api/service-completions";
+  return `/api/${encodeURIComponent(zohoModule.toLowerCase())}`;
+}
 
 type CustomViewsDropdownProps = {
   zohoModule?: string;
@@ -61,21 +71,26 @@ export function CustomViewsDropdown({
   const [listError, setListError] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
-  const { isFavorite, toggleFavorite, mergeZohoFavorites } = useFavoriteCustomViews();
+  const contractFavorites = useContractFavoriteCustomViews();
+  const vendorFavorites = useVendorFavoriteCustomViews();
+  const serviceCompletionFavorites = useServiceCompletionFavoriteCustomViews();
+  const { isFavorite, toggleFavorite, mergeZohoFavorites } =
+    zohoModule === "Vendors" ? vendorFavorites
+    : zohoModule === "ServiceCompletions" ? serviceCompletionFavorites
+    : contractFavorites;
 
   const allViewLabel =
-    zohoModule === "Vendors" ? "All Vendors" : "All Contracts";
+    zohoModule === "Vendors" ? "All Vendors"
+    : zohoModule === "ServiceCompletions" ? "All Service Completions"
+    : "All Contracts";
   const allViewFavoriteId =
-    zohoModule === "Vendors"
-      ? VENDORS_ALL_VIEW_FAVORITE_ID
-      : CONTRACTS_ALL_VIEW_FAVORITE_ID;
+    zohoModule === "Vendors" ? VENDORS_ALL_VIEW_FAVORITE_ID
+    : zohoModule === "ServiceCompletions" ? SERVICE_COMPLETIONS_ALL_VIEW_FAVORITE_ID
+    : CONTRACTS_ALL_VIEW_FAVORITE_ID;
 
-  const viewsPath =
-    zohoModule === "Contracts" ? "/api/contracts/custom-views"
-    : `/api/${encodeURIComponent(zohoModule.toLowerCase())}/custom-views`;
-  const filtersPath =
-    zohoModule === "Contracts" ? "/api/contracts/filters"
-    : `/api/${encodeURIComponent(zohoModule.toLowerCase())}/filters`;
+  const apiBase = moduleApiBase(zohoModule);
+  const viewsPath = `${apiBase}/custom-views`;
+  const filtersPath = `${apiBase}/filters`;
 
   const loadViews = useCallback(async () => {
     try {
@@ -258,7 +273,7 @@ export function CustomViewsDropdown({
     setDeletingId(id);
     setListError(null);
     try {
-      const res = await fetch(`/api/contracts/custom-views?id=${encodeURIComponent(id)}`, {
+      const res = await fetch(`${viewsPath}?id=${encodeURIComponent(id)}`, {
         method: "DELETE",
       });
       const data = (await res.json()) as { error?: string };
@@ -307,7 +322,7 @@ export function CustomViewsDropdown({
     setCreating(true);
     setCreateError(null);
     try {
-      const res = await fetch("/api/contracts/custom-views", {
+      const res = await fetch(viewsPath, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

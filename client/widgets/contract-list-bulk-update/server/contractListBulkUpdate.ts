@@ -14,7 +14,17 @@ import {
   type ContractListBulkUpdateResult,
 } from "@/widgets/contract-list-bulk-update/types";
 
-const ALLOWED_MODULES = new Set<BulkUpdateModuleName>(["Contracts", "Vendors"]);
+const ALLOWED_MODULES = new Set<BulkUpdateModuleName>([
+  "Contracts",
+  "Vendors",
+  "ServiceCompletions",
+]);
+
+function defaultEntityLabel(moduleName: BulkUpdateModuleName) {
+  if (moduleName === "Vendors") return "vendor";
+  if (moduleName === "ServiceCompletions") return "service completion";
+  return "contract";
+}
 
 function parseFunctionOutput(raw: unknown): unknown {
   if (raw == null) return raw;
@@ -63,7 +73,7 @@ function looksLikeDelugeError(output: unknown): boolean {
 /**
  * Invokes `contract_list_bulk_update` with comma-separated record IDs.
  * Prefers apikey (ZOHO_FUNCTIONS_API_KEY), falls back to oauth.
- * Used by Contracts and Vendors (same Zoho function name).
+ * Used by Contracts, Vendors, and Service Completions (same Zoho function name).
  */
 export async function runContractListBulkUpdate(
   payload: ContractListBulkUpdatePayload,
@@ -71,8 +81,7 @@ export async function runContractListBulkUpdate(
 ): Promise<ContractListBulkUpdateResult> {
   const moduleName = String(payload.moduleName ?? "").trim() as BulkUpdateModuleName;
   const entityLabel =
-    options?.entityLabel?.trim() ||
-    (moduleName === "Vendors" ? "vendor" : "contract");
+    options?.entityLabel?.trim() || defaultEntityLabel(moduleName);
   const recordIds = [...new Set((payload.recordIds ?? []).map(String))]
     .map((id) => id.trim())
     .filter(Boolean);
@@ -83,7 +92,8 @@ export async function runContractListBulkUpdate(
   if (!ALLOWED_MODULES.has(moduleName)) {
     return {
       ok: false,
-      message: 'moduleName must be "Contracts" or "Vendors".',
+      message:
+        'moduleName must be "Contracts", "Vendors", or "ServiceCompletions".',
     };
   }
   if (recordIds.length === 0) {

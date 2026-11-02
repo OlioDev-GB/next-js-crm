@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   ArrowRight,
+  ClipboardCheck,
   Database,
   FileText,
   Store,
@@ -42,6 +43,14 @@ const MODULES: ModuleCard[] = [
     icon: Store,
     useLiveRecordCount: true,
     liveCountPath: "/api/vendors?page=1",
+  },
+  {
+    title: "Service Completions",
+    description: "Browse and manage service completion.",
+    href: "/service-completions",
+    icon: ClipboardCheck,
+    useLiveRecordCount: true,
+    liveCountPath: "/api/service-completions?page=1",
   },
 ];
 

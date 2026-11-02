@@ -2,12 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-const STORAGE_KEY = "crm-pinned-columns-contracts-v1";
+const DEFAULT_STORAGE_KEY = "crm-pinned-columns-contracts-v1";
 
-function loadPinnedApiNames(): string[] {
+function loadPinnedApiNames(storageKey: string): string[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(storageKey);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
@@ -17,32 +17,38 @@ function loadPinnedApiNames(): string[] {
   }
 }
 
-function savePinnedApiNames(apiNames: string[]) {
+function savePinnedApiNames(storageKey: string, apiNames: string[]) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(apiNames));
+  window.localStorage.setItem(storageKey, JSON.stringify(apiNames));
 }
 
-export function usePinnedColumns() {
+export function usePinnedColumns(storageKey: string = DEFAULT_STORAGE_KEY) {
   const [pinnedApiNames, setPinnedApiNamesState] = useState<string[]>([]);
 
   useEffect(() => {
-    setPinnedApiNamesState(loadPinnedApiNames());
-  }, []);
+    setPinnedApiNamesState(loadPinnedApiNames(storageKey));
+  }, [storageKey]);
 
-  const setPinnedApiNames = useCallback((apiNames: string[]) => {
-    const unique = [...new Set(apiNames.filter(Boolean))];
-    setPinnedApiNamesState(unique);
-    savePinnedApiNames(unique);
-  }, []);
+  const setPinnedApiNames = useCallback(
+    (apiNames: string[]) => {
+      const unique = [...new Set(apiNames.filter(Boolean))];
+      setPinnedApiNamesState(unique);
+      savePinnedApiNames(storageKey, unique);
+    },
+    [storageKey],
+  );
 
-  const togglePinned = useCallback((apiName: string) => {
-    setPinnedApiNamesState((prev) => {
-      const next =
-        prev.includes(apiName) ? prev.filter((name) => name !== apiName) : [...prev, apiName];
-      savePinnedApiNames(next);
-      return next;
-    });
-  }, []);
+  const togglePinned = useCallback(
+    (apiName: string) => {
+      setPinnedApiNamesState((prev) => {
+        const next =
+          prev.includes(apiName) ? prev.filter((name) => name !== apiName) : [...prev, apiName];
+        savePinnedApiNames(storageKey, next);
+        return next;
+      });
+    },
+    [storageKey],
+  );
 
   const isPinned = useCallback(
     (apiName: string) => pinnedApiNames.includes(apiName),

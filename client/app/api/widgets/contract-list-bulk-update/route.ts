@@ -12,7 +12,9 @@ export async function POST(request: Request) {
       : [];
 
     const moduleName =
-      body.moduleName === "Vendors" || body.moduleName === "Contracts"
+      body.moduleName === "Vendors" ||
+      body.moduleName === "Contracts" ||
+      body.moduleName === "ServiceCompletions"
         ? body.moduleName
         : "Contracts";
 
