@@ -15,7 +15,8 @@ export async function POST(request: Request) {
       body.moduleName === "Vendors" ||
       body.moduleName === "Contracts" ||
       body.moduleName === "ServiceCompletions" ||
-      body.moduleName === "Deals"
+      body.moduleName === "Deals" ||
+      body.moduleName === "Bids"
         ? body.moduleName
         : "Contracts";
 

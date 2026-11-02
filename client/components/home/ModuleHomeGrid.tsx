@@ -8,6 +8,7 @@ import {
   ClipboardCheck,
   Database,
   FileText,
+  Gavel,
   Store,
   type LucideIcon,
 } from "lucide-react";
@@ -60,6 +61,14 @@ const MODULES: ModuleCard[] = [
     icon: Briefcase,
     useLiveRecordCount: true,
     liveCountPath: "/api/sow?page=1",
+  },
+  {
+    title: "Bids",
+    description: "Browse and manage bid records.",
+    href: "/bids",
+    icon: Gavel,
+    useLiveRecordCount: true,
+    liveCountPath: "/api/bids?page=1",
   },
 ];
 

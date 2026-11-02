@@ -21,6 +21,9 @@ export const SOW_ZOHO_RECORD_URL = zohoTabUrl("Deals");
 /** Service Completions → CustomModule14. */
 export const SERVICE_COMPLETION_ZOHO_RECORD_URL = zohoTabUrl("CustomModule14");
 
+/** Bids (standard / custom module tab name). */
+export const BID_ZOHO_RECORD_URL = zohoTabUrl("Bids");
+
 function recordUrl(base: string, recordId: string) {
   return `${base}/${encodeURIComponent(recordId.trim())}`;
 }
@@ -39,4 +42,8 @@ export function getSowZohoRecordUrl(recordId: string) {
 
 export function getServiceCompletionZohoRecordUrl(recordId: string) {
   return recordUrl(SERVICE_COMPLETION_ZOHO_RECORD_URL, recordId);
+}
+
+export function getBidZohoRecordUrl(recordId: string) {
+  return recordUrl(BID_ZOHO_RECORD_URL, recordId);
 }
