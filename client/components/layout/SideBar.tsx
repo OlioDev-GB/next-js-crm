@@ -973,11 +973,13 @@ export default function SideBar({
   const persistToZohoCrm =
     zohoModule === "Contracts" ||
     zohoModule === "Vendors" ||
-    zohoModule === "ServiceCompletions";
+    zohoModule === "ServiceCompletions" ||
+    zohoModule === "Deals";
   const customViewsApiUrl =
     zohoModule === "Contracts" ? "/api/contracts/custom-views"
     : zohoModule === "Vendors" ? "/api/vendors/custom-views"
     : zohoModule === "ServiceCompletions" ? "/api/service-completions/custom-views"
+    : zohoModule === "Deals" ? "/api/sow/custom-views"
     : `/api/${encodeURIComponent(zohoModule.toLowerCase())}/custom-views`;
   const [sections, setSections] = useState<ContractFilterSection[]>([]);
   const [fieldMeta, setFieldMeta] = useState<ContractFilterFieldMeta[]>([]);

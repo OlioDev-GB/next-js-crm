@@ -18,14 +18,17 @@ import { getOperatorsForDataType } from "@/lib/contracts/filterMeta";
 import { CONTRACTS_ALL_VIEW_FAVORITE_ID } from "@/lib/contracts/filterPersistence";
 import { VENDORS_ALL_VIEW_FAVORITE_ID } from "@/lib/vendors/filterPersistence";
 import { SERVICE_COMPLETIONS_ALL_VIEW_FAVORITE_ID } from "@/lib/service-completions/filterPersistence";
+import { SOW_ALL_VIEW_FAVORITE_ID } from "@/lib/sow/filterPersistence";
 import { useFavoriteCustomViews as useContractFavoriteCustomViews } from "@/hooks/contracts/useFavoriteCustomViews";
 import { useVendorFavoriteCustomViews } from "@/hooks/vendors/useVendorFavoriteCustomViews";
 import { useFavoriteCustomViews as useServiceCompletionFavoriteCustomViews } from "@/hooks/service-completions/useFavoriteCustomViews";
+import { useFavoriteCustomViews as useSowFavoriteCustomViews } from "@/hooks/sow/useFavoriteCustomViews";
 
 function moduleApiBase(zohoModule: string) {
   if (zohoModule === "Contracts") return "/api/contracts";
   if (zohoModule === "Vendors") return "/api/vendors";
   if (zohoModule === "ServiceCompletions") return "/api/service-completions";
+  if (zohoModule === "Deals") return "/api/sow";
   return `/api/${encodeURIComponent(zohoModule.toLowerCase())}`;
 }
 
@@ -74,18 +77,22 @@ export function CustomViewsDropdown({
   const contractFavorites = useContractFavoriteCustomViews();
   const vendorFavorites = useVendorFavoriteCustomViews();
   const serviceCompletionFavorites = useServiceCompletionFavoriteCustomViews();
+  const sowFavorites = useSowFavoriteCustomViews();
   const { isFavorite, toggleFavorite, mergeZohoFavorites } =
     zohoModule === "Vendors" ? vendorFavorites
     : zohoModule === "ServiceCompletions" ? serviceCompletionFavorites
+    : zohoModule === "Deals" ? sowFavorites
     : contractFavorites;
 
   const allViewLabel =
     zohoModule === "Vendors" ? "All Vendors"
     : zohoModule === "ServiceCompletions" ? "All Service Completions"
+    : zohoModule === "Deals" ? "All SOWs"
     : "All Contracts";
   const allViewFavoriteId =
     zohoModule === "Vendors" ? VENDORS_ALL_VIEW_FAVORITE_ID
     : zohoModule === "ServiceCompletions" ? SERVICE_COMPLETIONS_ALL_VIEW_FAVORITE_ID
+    : zohoModule === "Deals" ? SOW_ALL_VIEW_FAVORITE_ID
     : CONTRACTS_ALL_VIEW_FAVORITE_ID;
 
   const apiBase = moduleApiBase(zohoModule);
@@ -296,15 +303,22 @@ export function CustomViewsDropdown({
     setCreateError(null);
     setCreateName("");
     setAccessType("only_to_me");
-    const statusField = filterFields.find((f) => f.apiName === "Contract_Status");
+    const preferredApiName =
+      zohoModule === "Deals" ? "Stage"
+      : zohoModule === "ServiceCompletions" ? "Status"
+      : zohoModule === "Vendors" ? "Status"
+      : "Contract_Status";
+    const statusField =
+      filterFields.find((f) => f.apiName === preferredApiName) ??
+      filterFields.find((f) => f.apiName === "Status" || f.apiName === "Stage");
     setCondition({
-      apiName: statusField?.apiName ?? filterFields[0]?.apiName ?? "Contract_Status",
+      apiName: statusField?.apiName ?? filterFields[0]?.apiName ?? preferredApiName,
       operator: "equals",
       value:
-        statusField?.options?.find((o) => /active/i.test(o.value) || /active/i.test(o.label))
+        statusField?.options?.find((o) => /active|progress|sourcing/i.test(o.value) || /active|progress|sourcing/i.test(o.label))
           ?.value ??
         statusField?.options?.[0]?.value ??
-        "Active",
+        (zohoModule === "Deals" ? "Sourcing Vendor" : "Active"),
     });
   }
 

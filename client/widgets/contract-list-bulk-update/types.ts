@@ -3,10 +3,14 @@ export const CONTRACT_LIST_BULK_UPDATE_FUNCTION_NAME =
   "contract_list_bulk_update" as const;
 
 /** Zoho CRM modules supported by `contract_list_bulk_update`. */
-export type BulkUpdateModuleName = "Contracts" | "Vendors" | "ServiceCompletions";
+export type BulkUpdateModuleName =
+  | "Contracts"
+  | "Vendors"
+  | "ServiceCompletions"
+  | "Deals";
 
 export type ContractListBulkUpdatePayload = {
-  /** Zoho module API name — required by Deluge (`Contracts` | `Vendors` | `ServiceCompletions`). */
+  /** Zoho module API name — required by Deluge (`Contracts` | `Vendors` | `ServiceCompletions` | `Deals`). */
   moduleName: BulkUpdateModuleName;
   /** Record IDs to update. */
   recordIds: string[];

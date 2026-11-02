@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   ArrowRight,
+  Briefcase,
   ClipboardCheck,
   Database,
   FileText,
@@ -51,6 +52,14 @@ const MODULES: ModuleCard[] = [
     icon: ClipboardCheck,
     useLiveRecordCount: true,
     liveCountPath: "/api/service-completions?page=1",
+  },
+  {
+    title: "SOW",
+    description: "Browse and manage scope of work records.",
+    href: "/sow",
+    icon: Briefcase,
+    useLiveRecordCount: true,
+    liveCountPath: "/api/sow?page=1",
   },
 ];
 
