@@ -20,11 +20,13 @@ import { VENDORS_ALL_VIEW_FAVORITE_ID } from "@/lib/vendors/filterPersistence";
 import { SERVICE_COMPLETIONS_ALL_VIEW_FAVORITE_ID } from "@/lib/service-completions/filterPersistence";
 import { SOW_ALL_VIEW_FAVORITE_ID } from "@/lib/sow/filterPersistence";
 import { BIDS_ALL_VIEW_FAVORITE_ID } from "@/lib/bids/filterPersistence";
+import { VENDOR_INVOICES_ALL_VIEW_FAVORITE_ID } from "@/lib/vendor-invoices/filterPersistence";
 import { useFavoriteCustomViews as useContractFavoriteCustomViews } from "@/hooks/contracts/useFavoriteCustomViews";
 import { useVendorFavoriteCustomViews } from "@/hooks/vendors/useVendorFavoriteCustomViews";
 import { useFavoriteCustomViews as useServiceCompletionFavoriteCustomViews } from "@/hooks/service-completions/useFavoriteCustomViews";
 import { useFavoriteCustomViews as useSowFavoriteCustomViews } from "@/hooks/sow/useFavoriteCustomViews";
 import { useFavoriteCustomViews as useBidFavoriteCustomViews } from "@/hooks/bids/useFavoriteCustomViews";
+import { useFavoriteCustomViews as useVendorInvoiceFavoriteCustomViews } from "@/hooks/vendor-invoices/useFavoriteCustomViews";
 
 function moduleApiBase(zohoModule: string) {
   if (zohoModule === "Contracts") return "/api/contracts";
@@ -32,6 +34,7 @@ function moduleApiBase(zohoModule: string) {
   if (zohoModule === "ServiceCompletions") return "/api/service-completions";
   if (zohoModule === "Deals") return "/api/sow";
   if (zohoModule === "Bids") return "/api/bids";
+  if (zohoModule === "Vendor_Invoices") return "/api/vendor-invoices";
   return `/api/${encodeURIComponent(zohoModule.toLowerCase())}`;
 }
 
@@ -82,11 +85,13 @@ export function CustomViewsDropdown({
   const serviceCompletionFavorites = useServiceCompletionFavoriteCustomViews();
   const sowFavorites = useSowFavoriteCustomViews();
   const bidFavorites = useBidFavoriteCustomViews();
+  const vendorInvoiceFavorites = useVendorInvoiceFavoriteCustomViews();
   const { isFavorite, toggleFavorite, mergeZohoFavorites } =
     zohoModule === "Vendors" ? vendorFavorites
     : zohoModule === "ServiceCompletions" ? serviceCompletionFavorites
     : zohoModule === "Deals" ? sowFavorites
     : zohoModule === "Bids" ? bidFavorites
+    : zohoModule === "Vendor_Invoices" ? vendorInvoiceFavorites
     : contractFavorites;
 
   const allViewLabel =
@@ -94,12 +99,14 @@ export function CustomViewsDropdown({
     : zohoModule === "ServiceCompletions" ? "All Service Completions"
     : zohoModule === "Deals" ? "All SOWs"
     : zohoModule === "Bids" ? "All Bids"
+    : zohoModule === "Vendor_Invoices" ? "All Vendor Invoices"
     : "All Contracts";
   const allViewFavoriteId =
     zohoModule === "Vendors" ? VENDORS_ALL_VIEW_FAVORITE_ID
     : zohoModule === "ServiceCompletions" ? SERVICE_COMPLETIONS_ALL_VIEW_FAVORITE_ID
     : zohoModule === "Deals" ? SOW_ALL_VIEW_FAVORITE_ID
     : zohoModule === "Bids" ? BIDS_ALL_VIEW_FAVORITE_ID
+    : zohoModule === "Vendor_Invoices" ? VENDOR_INVOICES_ALL_VIEW_FAVORITE_ID
     : CONTRACTS_ALL_VIEW_FAVORITE_ID;
 
   const apiBase = moduleApiBase(zohoModule);
@@ -312,7 +319,10 @@ export function CustomViewsDropdown({
     setAccessType("only_to_me");
     const preferredApiName =
       zohoModule === "Deals" ? "Stage"
-      : zohoModule === "ServiceCompletions" || zohoModule === "Bids" || zohoModule === "Vendors"
+      : zohoModule === "ServiceCompletions" ||
+          zohoModule === "Bids" ||
+          zohoModule === "Vendors" ||
+          zohoModule === "Vendor_Invoices"
         ? "Status"
       : "Contract_Status";
     const statusField =
@@ -322,11 +332,12 @@ export function CustomViewsDropdown({
       apiName: statusField?.apiName ?? filterFields[0]?.apiName ?? preferredApiName,
       operator: "equals",
       value:
-        statusField?.options?.find((o) => /active|progress|sourcing|submitted/i.test(o.value) || /active|progress|sourcing|submitted/i.test(o.label))
+        statusField?.options?.find((o) => /active|progress|sourcing|submitted|open/i.test(o.value) || /active|progress|sourcing|submitted|open/i.test(o.label))
           ?.value ??
         statusField?.options?.[0]?.value ??
         (zohoModule === "Deals" ? "Sourcing Vendor"
         : zohoModule === "Bids" ? "Submitted"
+        : zohoModule === "Vendor_Invoices" ? "Open"
         : "Active"),
     });
   }

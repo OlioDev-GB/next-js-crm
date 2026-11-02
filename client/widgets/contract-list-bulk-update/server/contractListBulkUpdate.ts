@@ -20,6 +20,7 @@ const ALLOWED_MODULES = new Set<BulkUpdateModuleName>([
   "ServiceCompletions",
   "Deals",
   "Bids",
+  "Vendor_Invoices",
 ]);
 
 function defaultEntityLabel(moduleName: BulkUpdateModuleName) {
@@ -27,6 +28,7 @@ function defaultEntityLabel(moduleName: BulkUpdateModuleName) {
   if (moduleName === "ServiceCompletions") return "service completion";
   if (moduleName === "Deals") return "SOW";
   if (moduleName === "Bids") return "bid";
+  if (moduleName === "Vendor_Invoices") return "vendor invoice";
   return "contract";
 }
 
@@ -77,7 +79,8 @@ function looksLikeDelugeError(output: unknown): boolean {
 /**
  * Invokes `contract_list_bulk_update` with comma-separated record IDs.
  * Prefers apikey (ZOHO_FUNCTIONS_API_KEY), falls back to oauth.
- * Used by Contracts, Vendors, Service Completions, SOW/Deals, and Bids (same Zoho function name).
+ * Used by Contracts, Vendors, Service Completions, SOW/Deals, Bids, and Vendor Invoices
+ * (same Zoho function name).
  */
 export async function runContractListBulkUpdate(
   payload: ContractListBulkUpdatePayload,
@@ -97,7 +100,7 @@ export async function runContractListBulkUpdate(
     return {
       ok: false,
       message:
-        'moduleName must be "Contracts", "Vendors", "ServiceCompletions", "Deals", or "Bids".',
+        'moduleName must be "Contracts", "Vendors", "ServiceCompletions", "Deals", "Bids", or "Vendor_Invoices".',
     };
   }
   if (recordIds.length === 0) {

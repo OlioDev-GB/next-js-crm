@@ -9,6 +9,7 @@ import {
   Database,
   FileText,
   Gavel,
+  Receipt,
   Store,
   type LucideIcon,
 } from "lucide-react";
@@ -56,7 +57,7 @@ const MODULES: ModuleCard[] = [
   },
   {
     title: "SOW",
-    description: "Browse and manage scope of work records.",
+    description: "Browse and manage SOW records.",
     href: "/sow",
     icon: Briefcase,
     useLiveRecordCount: true,
@@ -69,6 +70,14 @@ const MODULES: ModuleCard[] = [
     icon: Gavel,
     useLiveRecordCount: true,
     liveCountPath: "/api/bids?page=1",
+  },
+  {
+    title: "Vendor Invoices",
+    description: "Browse and manage vendor invoices.",
+    href: "/vendor-invoices",
+    icon: Receipt,
+    useLiveRecordCount: true,
+    liveCountPath: "/api/vendor-invoices?page=1",
   },
 ];
 
@@ -170,9 +179,7 @@ export default function ModuleHomeGrid() {
 
     async function loadLiveCounts() {
       setLiveCountsLoading(true);
-      const modulesWithLive = MODULES.filter(
-        (m) => m.useLiveRecordCount && m.liveCountPath,
-      );
+      const modulesWithLive = MODULES.filter((m) => m.useLiveRecordCount && m.liveCountPath);
       try {
         const entries = await Promise.all(
           modulesWithLive.map(async (module) => {

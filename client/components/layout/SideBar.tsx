@@ -975,13 +975,15 @@ export default function SideBar({
     zohoModule === "Vendors" ||
     zohoModule === "ServiceCompletions" ||
     zohoModule === "Deals" ||
-    zohoModule === "Bids";
+    zohoModule === "Bids" ||
+    zohoModule === "Vendor_Invoices";
   const customViewsApiUrl =
     zohoModule === "Contracts" ? "/api/contracts/custom-views"
     : zohoModule === "Vendors" ? "/api/vendors/custom-views"
     : zohoModule === "ServiceCompletions" ? "/api/service-completions/custom-views"
     : zohoModule === "Deals" ? "/api/sow/custom-views"
     : zohoModule === "Bids" ? "/api/bids/custom-views"
+    : zohoModule === "Vendor_Invoices" ? "/api/vendor-invoices/custom-views"
     : `/api/${encodeURIComponent(zohoModule.toLowerCase())}/custom-views`;
   const [sections, setSections] = useState<ContractFilterSection[]>([]);
   const [fieldMeta, setFieldMeta] = useState<ContractFilterFieldMeta[]>([]);
