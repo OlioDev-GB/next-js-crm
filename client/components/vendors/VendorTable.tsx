@@ -24,9 +24,15 @@ import {
 import { ResizableTableHeadCell } from "@/components/shared/ResizableTableHeadCell";
 import { ThemeToggle } from "@/components/layout/ThemeToggle";
 import { Button } from "@/components/ui/button";
+import { LookupCellEditor } from "@/components/contracts/LookupCellEditor";
 import { useVendorVisibleColumns } from "@/hooks/vendors/useVendorVisibleColumns";
+import {
+  isFillableFieldType,
+  useContractFillDown,
+} from "@/hooks/contracts/useContractFillDown";
 import { usePinnedColumns } from "@/hooks/contracts/usePinnedColumns";
 import { useResizableColumnWidths } from "@/hooks/table/useResizableColumnWidths";
+import { isLookupLikeDataType } from "@/lib/contracts/filterMeta";
 import { cn } from "@/lib/utils";
 import {
   buildFieldsQueryParam,
@@ -315,6 +321,32 @@ export default function VendorsTable({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [columnSort, setColumnSort] = useState<ColumnSortState | null>(null);
   const [listReloadKey, setListReloadKey] = useState(0);
+
+  const {
+    filling,
+    fillMessage,
+    fillError,
+    pendingUpdate,
+    confirmPendingUpdate,
+    cancelPendingUpdate,
+    draftValue,
+    setDraftValue,
+    selectLookupSuggestion,
+    selectCell,
+    startEditing,
+    commitEditAndSave,
+    cancelEdit,
+    beginFillDrag,
+    isCellInFillPreview,
+    isActiveCell,
+    isEditingCell,
+    clearFillMessage,
+  } = useContractFillDown({
+    contracts: vendors,
+    setContracts: setVendors,
+    moduleName: "Vendors",
+    entityLabel: "vendor",
+  });
 
   const listQueryKey = useMemo(
     () =>
@@ -830,6 +862,107 @@ export default function VendorsTable({
             {error}
           </div>
         : null}
+        {fillError ?
+          <div className="flex items-start justify-between gap-3 border-b border-red-900/50 bg-red-950/40 px-3 py-2.5 text-sm text-red-300 sm:px-6">
+            <span className="min-w-0 break-words">{fillError}</span>
+            <button
+              type="button"
+              className="shrink-0 text-xs underline opacity-80 hover:opacity-100"
+              onClick={clearFillMessage}
+            >
+              Dismiss
+            </button>
+          </div>
+        : null}
+        {fillMessage && !fillError ?
+          <div className="flex items-start justify-between gap-3 border-b border-crm-border bg-crm-panel-muted px-3 py-2.5 text-sm text-crm-text sm:px-6">
+            <span className="min-w-0 break-words">
+              {filling ?
+                <InlineLoadingShimmer className="mr-2 inline-block align-middle" />
+              : null}
+              {fillMessage}
+            </span>
+            {!filling ?
+              <button
+                type="button"
+                className="shrink-0 text-xs text-crm-text-muted underline hover:text-crm-text"
+                onClick={clearFillMessage}
+              >
+                Dismiss
+              </button>
+            : null}
+          </div>
+        : null}
+        {pendingUpdate ?
+          <div
+            className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4"
+            role="presentation"
+            onClick={cancelPendingUpdate}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="vendor-fill-confirm-title"
+              className="w-full max-w-md rounded-lg border border-crm-border bg-crm-panel p-5 shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  cancelPendingUpdate();
+                }
+              }}
+            >
+              <h2
+                id="vendor-fill-confirm-title"
+                className="text-base font-semibold text-crm-text"
+              >
+                Confirm update
+              </h2>
+              <p className="mt-2 text-sm text-crm-text">
+                Update{" "}
+                <span className="font-medium tabular-nums">
+                  {pendingUpdate.recordIds.length}
+                </span>{" "}
+                vendor{pendingUpdate.recordIds.length === 1 ? "" : "s"}?
+              </p>
+              <dl className="mt-3 space-y-1 text-sm">
+                <div className="flex gap-2">
+                  <dt className="shrink-0 text-crm-text-muted">Field</dt>
+                  <dd className="min-w-0 break-words text-crm-text">
+                    {pendingUpdate.fieldApiName.replace(/_/g, " ")}
+                  </dd>
+                </div>
+                <div className="flex gap-2">
+                  <dt className="shrink-0 text-crm-text-muted">Value</dt>
+                  <dd className="min-w-0 break-words text-crm-text">
+                    {pendingUpdate.displayValue || "—"}
+                  </dd>
+                </div>
+              </dl>
+              <div className="mt-5 flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="crm-toolbar-btn cursor-pointer"
+                  onClick={cancelPendingUpdate}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="cursor-pointer bg-blue-600 text-white hover:bg-blue-500"
+                  onClick={() => {
+                    void confirmPendingUpdate();
+                  }}
+                >
+                  Update
+                </Button>
+              </div>
+            </div>
+          </div>
+        : null}
         <div className="relative z-0 flex min-h-0 flex-1 flex-col">
           {loading ?
             <>
@@ -887,7 +1020,7 @@ export default function VendorsTable({
                           No vendors found.
                         </TableCell>
                       </TableRow>
-                    : vendors.map((row) => {
+                    : vendors.map((row, rowIndex) => {
                         const isSelected = selectedIds.has(row.id);
                         const rowTitle =
                           row.fields.Vendor_Name?.trim() ||
@@ -899,9 +1032,11 @@ export default function VendorsTable({
                             role="link"
                             tabIndex={0}
                             data-state={isSelected ? "selected" : undefined}
-                            title="Double-click row (or Alt+Enter) to open in Zoho."
+                            title="Click a cell to select. Double-click the cell to edit, then drag the corner handle to fill down. Alt+double-click row to open in Zoho."
                             className="crm-row-hover border-crm-border text-crm-text"
-                            onDoubleClick={() => openVendorRecord(row.id)}
+                            onDoubleClick={(e) => {
+                              if (e.altKey) openVendorRecord(row.id);
+                            }}
                             onKeyDown={(e) => {
                               if (e.key === "Enter" && e.altKey) {
                                 e.preventDefault();
@@ -943,20 +1078,100 @@ export default function VendorsTable({
                                 const pinned = isPinned(col.apiName);
                                 const cellClass = getColumnCellClass(col, i, "body", pinned);
                                 const pinnedLeft = pinnedLeftByApiName.get(col.apiName);
+                                const fillable = isFillableFieldType(
+                                  col.dataType,
+                                  col.apiName,
+                                );
+                                const active = isActiveCell(row.id, col.apiName);
+                                const editingThis = isEditingCell(row.id, col.apiName);
+                                const inPreview = isCellInFillPreview(rowIndex, col.apiName);
+                                const cellRef = {
+                                  rowId: row.id,
+                                  rowIndex,
+                                  apiName: col.apiName,
+                                  dataType: col.dataType,
+                                };
                                 return (
                                   <TableCell
                                     key={col.apiName}
-                                    className={cellClass}
+                                    data-fill-row={fillable ? rowIndex : undefined}
+                                    data-fill-col={fillable ? col.apiName : undefined}
+                                    className={cn(
+                                      cellClass,
+                                      "relative",
+                                      fillable && "cursor-cell",
+                                      active && "ring-2 ring-inset ring-blue-500",
+                                      inPreview && !active && "bg-blue-500/10",
+                                      filling && "pointer-events-none opacity-80",
+                                      editingThis && "z-40 overflow-visible",
+                                    )}
                                     style={{
                                       ...columnSizeStyle(col),
                                       ...(pinnedLeft != null ? { left: pinnedLeft } : null),
                                     }}
+                                    onClick={(e) => {
+                                      if (!fillable || editingThis) return;
+                                      e.stopPropagation();
+                                      selectCell(cellRef);
+                                    }}
+                                    onDoubleClick={(e) => {
+                                      if (!fillable) return;
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      startEditing(cellRef);
+                                    }}
                                   >
-                                    <CellContent
-                                      apiName={col.apiName}
-                                      value={value}
-                                      dataType={col.dataType}
-                                    />
+                                    {editingThis ?
+                                      isLookupLikeDataType(col.dataType) ?
+                                        <LookupCellEditor
+                                          apiName={col.apiName}
+                                          label={col.label}
+                                          dataType={col.dataType}
+                                          draftValue={draftValue}
+                                          onDraftChange={setDraftValue}
+                                          onSelectSuggestion={selectLookupSuggestion}
+                                          onCommit={() => {
+                                            void commitEditAndSave();
+                                          }}
+                                          onCancel={cancelEdit}
+                                          module="Vendors"
+                                        />
+                                      : <input
+                                          autoFocus
+                                          value={draftValue}
+                                          aria-label={`Edit ${col.label}`}
+                                          className="h-8 w-full min-w-0 rounded border border-blue-500 bg-crm-panel px-1.5 text-sm text-crm-text outline-none"
+                                          onClick={(e) => e.stopPropagation()}
+                                          onChange={(e) => setDraftValue(e.target.value)}
+                                          onBlur={() => {
+                                            void commitEditAndSave();
+                                          }}
+                                          onKeyDown={(e) => {
+                                            e.stopPropagation();
+                                            if (e.key === "Enter") {
+                                              e.preventDefault();
+                                              void commitEditAndSave();
+                                            } else if (e.key === "Escape") {
+                                              e.preventDefault();
+                                              cancelEdit();
+                                            }
+                                          }}
+                                        />
+                                    : <CellContent
+                                        apiName={col.apiName}
+                                        value={value}
+                                        dataType={col.dataType}
+                                      />
+                                    }
+                                    {fillable && active && !editingThis ?
+                                      <span
+                                        role="presentation"
+                                        aria-hidden
+                                        title="Drag to fill adjacent rows with this value"
+                                        className="absolute bottom-0 right-0 z-20 size-3 cursor-crosshair border border-white bg-blue-600 shadow-sm dark:border-zinc-900"
+                                        onPointerDown={(e) => beginFillDrag(cellRef, e)}
+                                      />
+                                    : null}
                                   </TableCell>
                                 );
                               },

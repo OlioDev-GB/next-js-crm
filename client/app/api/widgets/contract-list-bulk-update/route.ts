@@ -11,7 +11,13 @@ export async function POST(request: Request) {
       ? body.recordIds.map(String)
       : [];
 
+    const moduleName =
+      body.moduleName === "Vendors" || body.moduleName === "Contracts"
+        ? body.moduleName
+        : "Contracts";
+
     const payload: ContractListBulkUpdatePayload = {
+      moduleName,
       recordIds,
       fieldApiName:
         typeof body.fieldApiName === "string" ? body.fieldApiName : "",

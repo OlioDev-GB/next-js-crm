@@ -9,9 +9,12 @@
 import { executeZohoCrmFunction } from "@/lib/zoho";
 import {
   CONTRACT_LIST_BULK_UPDATE_FUNCTION_NAME,
+  type BulkUpdateModuleName,
   type ContractListBulkUpdatePayload,
   type ContractListBulkUpdateResult,
 } from "@/widgets/contract-list-bulk-update/types";
+
+const ALLOWED_MODULES = new Set<BulkUpdateModuleName>(["Contracts", "Vendors"]);
 
 function parseFunctionOutput(raw: unknown): unknown {
   if (raw == null) return raw;
@@ -58,12 +61,18 @@ function looksLikeDelugeError(output: unknown): boolean {
 }
 
 /**
- * Invokes `contract_list_bulk_update` with comma-separated contract IDs.
+ * Invokes `contract_list_bulk_update` with comma-separated record IDs.
  * Prefers apikey (ZOHO_FUNCTIONS_API_KEY), falls back to oauth.
+ * Used by Contracts and Vendors (same Zoho function name).
  */
 export async function runContractListBulkUpdate(
   payload: ContractListBulkUpdatePayload,
+  options?: { entityLabel?: string },
 ): Promise<ContractListBulkUpdateResult> {
+  const moduleName = String(payload.moduleName ?? "").trim() as BulkUpdateModuleName;
+  const entityLabel =
+    options?.entityLabel?.trim() ||
+    (moduleName === "Vendors" ? "vendor" : "contract");
   const recordIds = [...new Set((payload.recordIds ?? []).map(String))]
     .map((id) => id.trim())
     .filter(Boolean);
@@ -71,15 +80,25 @@ export async function runContractListBulkUpdate(
   const fieldValue = String(payload.fieldValue ?? "").trim();
   const fieldType = String(payload.fieldType ?? "text").trim() || "text";
 
+  if (!ALLOWED_MODULES.has(moduleName)) {
+    return {
+      ok: false,
+      message: 'moduleName must be "Contracts" or "Vendors".',
+    };
+  }
   if (recordIds.length === 0) {
-    return { ok: false, message: "Select at least one contract to update." };
+    return {
+      ok: false,
+      message: `Select at least one ${entityLabel} to update.`,
+    };
   }
   if (!fieldApiName) {
     return { ok: false, message: "Field API name is required." };
   }
 
-  // Must match Deluge params: recordIdsJson, fieldApiName, fieldValue, fieldType
+  // Must match Deluge params: moduleName, recordIdsJson, fieldApiName, fieldValue, fieldType
   const args = {
+    moduleName,
     recordIdsJson: recordIds.join(","),
     fieldApiName,
     fieldValue,
@@ -150,7 +169,7 @@ export async function runContractListBulkUpdate(
 
   return {
     ok: true,
-    message: `Updated ${recordIds.length} contract${recordIds.length === 1 ? "" : "s"}.`,
+    message: `Updated ${recordIds.length} ${entityLabel}${recordIds.length === 1 ? "" : "s"}.`,
     output,
   };
 }

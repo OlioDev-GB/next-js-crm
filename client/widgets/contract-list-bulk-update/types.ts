@@ -2,10 +2,15 @@
 export const CONTRACT_LIST_BULK_UPDATE_FUNCTION_NAME =
   "contract_list_bulk_update" as const;
 
+/** Zoho CRM modules supported by `contract_list_bulk_update`. */
+export type BulkUpdateModuleName = "Contracts" | "Vendors";
+
 export type ContractListBulkUpdatePayload = {
-  /** Contract record IDs to update. */
+  /** Zoho module API name — required by Deluge (`Contracts` | `Vendors`). */
+  moduleName: BulkUpdateModuleName;
+  /** Record IDs to update. */
   recordIds: string[];
-  /** Contracts field API name, e.g. Site_Street or Vendor. */
+  /** Field API name, e.g. Site_Street or Email. */
   fieldApiName: string;
   /**
    * Value sent to Deluge as text.

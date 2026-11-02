@@ -1,4 +1,5 @@
 export type {
+  BulkUpdateModuleName,
   ContractListBulkUpdatePayload,
   ContractListBulkUpdateResult,
 } from "./types";

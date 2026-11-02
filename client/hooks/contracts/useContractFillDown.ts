@@ -10,7 +10,17 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import type { ContractRecord } from "@/lib/contracts/columns";
-import type { ContractListBulkUpdateResult } from "@/widgets/contract-list-bulk-update/types";
+import type {
+  BulkUpdateModuleName,
+  ContractListBulkUpdateResult,
+} from "@/widgets/contract-list-bulk-update/types";
+
+/** Shared shape for Contracts / Vendors fill-down rows. */
+export type FillDownRecord = {
+  id: string;
+  fields: Record<string, string>;
+  lookups?: Record<string, string>;
+};
 
 export type ActiveFillCell = {
   rowId: string;
@@ -65,7 +75,7 @@ export function isInlineEditableFieldType(dataType: string, apiName?: string) {
 }
 
 export function resolveFillDownFieldValue(
-  row: ContractRecord,
+  row: FillDownRecord,
   apiName: string,
   dataType: string,
 ): string {
@@ -120,15 +130,24 @@ function readFillTargetFromPoint(
   return { rowIndex, apiName };
 }
 
-type UseContractFillDownArgs = {
-  contracts: ContractRecord[];
-  setContracts: Dispatch<SetStateAction<ContractRecord[]>>;
+type UseContractFillDownArgs<T extends FillDownRecord = ContractRecord> = {
+  contracts: T[];
+  setContracts: Dispatch<SetStateAction<T[]>>;
+  /** Zoho module for Deluge `moduleName` (`Contracts` | `Vendors`). */
+  moduleName?: BulkUpdateModuleName;
+  /** Defaults to Contracts bulk-update API. */
+  persistUrl?: string;
+  /** Used in status / confirm copy (“contract” / “vendor”). */
+  entityLabel?: string;
 };
 
-export function useContractFillDown({
+export function useContractFillDown<T extends FillDownRecord = ContractRecord>({
   contracts,
   setContracts,
-}: UseContractFillDownArgs) {
+  moduleName = "Contracts",
+  persistUrl = "/api/widgets/contract-list-bulk-update",
+  entityLabel = "contract",
+}: UseContractFillDownArgs<T>) {
   const [activeCell, setActiveCell] = useState<ActiveFillCell | null>(null);
   const [editing, setEditing] = useState(false);
   const [draftValue, setDraftValue] = useState("");
@@ -354,7 +373,7 @@ export function useContractFillDown({
         setEditing(false);
       }
 
-      const sourceForResolve: ContractRecord = {
+      const sourceForResolve = {
         ...row,
         fields: { ...row.fields, [cell.apiName]: displayValue },
         lookups:
@@ -366,7 +385,7 @@ export function useContractFillDown({
                 cell.dataType.toLowerCase() === "ownerlookup")
             ? { ...(row.lookups ?? {}), [cell.apiName]: displayValue.trim() }
             : row.lookups,
-      };
+      } satisfies FillDownRecord;
       const fieldValue =
         picked?.value ||
         resolveFillDownFieldValue(
@@ -444,14 +463,15 @@ export function useContractFillDown({
       setFillError(null);
       setFillMessage(
         successMessage ??
-          `Updating ${targetIds.length} contract${targetIds.length === 1 ? "" : "s"}…`,
+          `Updating ${targetIds.length} ${entityLabel}${targetIds.length === 1 ? "" : "s"}…`,
       );
 
       try {
-        const res = await fetch("/api/widgets/contract-list-bulk-update", {
+        const res = await fetch(persistUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            moduleName,
             recordIds: targetIds,
             fieldApiName: apiName,
             fieldValue,
@@ -473,7 +493,7 @@ export function useContractFillDown({
         );
         setFillMessage(
           result.message ||
-            `Updated ${targetIds.length} contract${targetIds.length === 1 ? "" : "s"}.`,
+            `Updated ${targetIds.length} ${entityLabel}${targetIds.length === 1 ? "" : "s"}.`,
         );
         return true;
       } catch (error) {
@@ -486,7 +506,7 @@ export function useContractFillDown({
         setFilling(false);
       }
     },
-    [applyOptimisticFill],
+    [applyOptimisticFill, entityLabel, moduleName, persistUrl],
   );
 
   const commitEditAndSave = useCallback(async () => {
