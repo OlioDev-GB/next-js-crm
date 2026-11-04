@@ -685,6 +685,8 @@ export function OlioMassUpdateWidget({
           id={valueId}
           className={controlClassName}
           disabled
+          value=""
+          onChange={() => {}}
           placeholder="Select a field first"
         />
       );

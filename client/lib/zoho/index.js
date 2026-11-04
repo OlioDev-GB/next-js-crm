@@ -331,6 +331,46 @@ export async function executeZohoCrmFunction(functionApiName, functionArguments,
   return result;
 }
 
+/**
+ * Execute a Zoho CRM custom button (list mass action / util menu).
+ * Same as POST /crm/v7/{module}/actions/execute_custom_button.
+ *
+ * @param {string} moduleApiName
+ * @param {string} buttonId
+ * @param {string[]} [recordIds]
+ * @returns {Promise<{ res: Response; body: any }>}
+ */
+export async function executeZohoCustomButton(
+  moduleApiName,
+  buttonId,
+  recordIds = [],
+) {
+  const moduleName = String(moduleApiName || "").trim();
+  const id = String(buttonId || "").trim();
+  if (!moduleName) {
+    throw new Error("Zoho module API name is required.");
+  }
+  if (!id) {
+    throw new Error("Zoho custom button ID is required.");
+  }
+
+  const ids = [...new Set((recordIds ?? []).map(String))]
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  /** @type {{ button_id: string; record_ids?: string[] }} */
+  const entry = { button_id: id };
+  if (ids.length > 0) {
+    entry.record_ids = ids;
+  }
+
+  const url = `${ZOHO_CRM_BASE}/${encodeURIComponent(moduleName)}/actions/execute_custom_button`;
+  return fetchZohoJson(url, {
+    method: "POST",
+    body: { execute_custom_button: [entry] },
+  });
+}
+
 /* ─── Record mapping ─── */
 
 /** Product / service lookup label from a Scope of Work subform cell. */
