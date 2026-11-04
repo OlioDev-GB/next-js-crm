@@ -21,8 +21,8 @@ export const SOW_ZOHO_RECORD_URL = zohoTabUrl("Deals");
 /** Service Completions → CustomModule14. */
 export const SERVICE_COMPLETION_ZOHO_RECORD_URL = zohoTabUrl("CustomModule14");
 
-/** Bids (standard / custom module tab name). */
-export const BID_ZOHO_RECORD_URL = zohoTabUrl("Bids");
+/** Bids → CustomModule2 in oliogroup. */
+export const BID_ZOHO_RECORD_URL = zohoTabUrl("CustomModule2");
 
 /** Vendor Invoices tab name in oliogroup. */
 export const VENDOR_INVOICE_ZOHO_RECORD_URL = zohoTabUrl("Vendor_Invoices");
