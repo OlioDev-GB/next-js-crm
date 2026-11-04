@@ -249,10 +249,18 @@ async function uploadFileToZoho(file: UploadedFile): Promise<string> {
   return fileId;
 }
 
-function cleanedSubformRow(row: MassUpdateSubformRow) {
+function serviceIdOf(row: Record<string, unknown>) {
+  const service = row.OurServices as { id?: unknown } | string | null | undefined;
+  if (service == null || service === "") return "";
+  if (typeof service === "string") return service.trim();
+  return String(service.id ?? "").trim();
+}
+
+function cleanedSubformRow(row: MassUpdateSubformRow, existingId?: string) {
   const result: Record<string, unknown> = {
     OurServices: { id: row.OurServices },
   };
+  if (existingId) result.id = existingId;
   for (const key of [
     "Start_Date",
     "End_Date",
@@ -265,34 +273,56 @@ function cleanedSubformRow(row: MassUpdateSubformRow) {
   return result;
 }
 
+/**
+ * Keep untouched rows by id only — avoids revalidating OurServices / Parent_Id
+ * lookup filters on PUT (revalidate_filter_during_edit).
+ */
+function preserveExistingSubformRow(row: Record<string, unknown>) {
+  const id = String(row.id ?? "").trim();
+  if (id) return { id };
+  const serviceId = serviceIdOf(row);
+  return serviceId ? { OurServices: { id: serviceId } } : null;
+}
+
 function mergeSubformRows(
   existing: unknown,
   incoming: MassUpdateSubformRow[],
 ): Record<string, unknown>[] {
-  const rows = Array.isArray(existing)
+  const existingRows = Array.isArray(existing)
     ? existing.map((row) => ({ ...(row as Record<string, unknown>) }))
     : [];
 
+  const matched = new Set<number>();
+  const rows: Record<string, unknown>[] = [];
+
   for (const newRow of incoming) {
-    const index = rows.findIndex((row) => {
-      const service = row.OurServices as { id?: unknown } | undefined;
-      return String(service?.id ?? "") === String(newRow.OurServices);
-    });
-    const cleaned = cleanedSubformRow(newRow);
+    const index = existingRows.findIndex(
+      (row, i) =>
+        !matched.has(i) && serviceIdOf(row) === String(newRow.OurServices),
+    );
     if (index < 0) {
-      rows.push(cleaned);
+      rows.push(cleanedSubformRow(newRow));
       continue;
     }
-    const previous = rows[index];
-    rows[index] = {
-      ...previous,
+    matched.add(index);
+    const previous = existingRows[index];
+    const existingId = String(previous.id ?? "").trim() || undefined;
+    const cleaned = cleanedSubformRow(newRow, existingId);
+    rows.push({
       ...cleaned,
       Start_Date: cleaned.Start_Date ?? previous.Start_Date ?? null,
       End_Date: cleaned.End_Date ?? previous.End_Date ?? null,
       Invoice_Price: cleaned.Invoice_Price ?? previous.Invoice_Price ?? null,
       Vendor_Price: cleaned.Vendor_Price ?? previous.Vendor_Price ?? null,
-    };
+    });
   }
+
+  for (let i = 0; i < existingRows.length; i += 1) {
+    if (matched.has(i)) continue;
+    const preserved = preserveExistingSubformRow(existingRows[i]);
+    if (preserved) rows.push(preserved);
+  }
+
   return rows;
 }
 

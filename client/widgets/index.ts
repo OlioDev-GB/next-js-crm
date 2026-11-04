@@ -1,5 +1,6 @@
 import type { CrmWidgetDefinition } from "@/widgets/types";
 import { ACTIVATE_VENDORS_WIDGET } from "@/widgets/activate-vendors";
+import { ADD_MASS_BID_WIDGET } from "@/widgets/add-mass-bid";
 import { ADD_MASS_SUBFORM_WIDGET } from "@/widgets/add-mass-subform";
 import { COMPLIANCE_FIELDS_WIDGET } from "@/widgets/compliance-fields";
 import { CREATE_CONTRACT_PDF_WIDGET } from "@/widgets/create-contract-pdf";
@@ -13,6 +14,7 @@ import { CLONE_CONTRACT_WIDGET } from "@/widgets/clone-contract";
 import { CREATE_SERVICE_COMPLETION_WIDGET } from "@/widgets/create-service-completion";
 import { CLIENT_SENDING_RFP_WIDGET } from "@/widgets/client-sending-rfp";
 import { STATUS_VENDOR_COMPLIANCE_WIDGET } from "@/widgets/status-vendor-compliance";
+import { UPDATE_ADDENDUM_WIDGET } from "@/widgets/update-addendum";
 import {
   CREATE_SC_VENDOR_INVOICE_WIDGET,
   SOLAR_CLIENT_SYNC_WIDGET,
@@ -26,6 +28,8 @@ export const CRM_WIDGETS = [
   CREATE_VENDOR_INVOICE_RECORDS_WIDGET,
   OLIO_MASS_UPDATE_WIDGET,
   ADD_MASS_SUBFORM_WIDGET,
+  ADD_MASS_BID_WIDGET,
+  UPDATE_ADDENDUM_WIDGET,
   ACTIVATE_VENDORS_WIDGET,
   MISSING_INVOICE_EMAIL_WIDGET,
   MASS_RENEWAL_CONTRACTS_WIDGET,
@@ -59,9 +63,19 @@ export {
   ActivateVendorsWidget,
 } from "@/widgets/activate-vendors";
 export {
+  ADD_MASS_BID_WIDGET,
+  ADD_MASS_BID_BUTTON_LABEL,
+  AddMassBidWidget,
+} from "@/widgets/add-mass-bid";
+export {
   ADD_MASS_SUBFORM_WIDGET,
   AddMassSubformWidget,
 } from "@/widgets/add-mass-subform";
+export {
+  UPDATE_ADDENDUM_WIDGET,
+  UPDATE_ADDENDUM_BUTTON_LABEL,
+  UpdateAddendumWidget,
+} from "@/widgets/update-addendum";
 export {
   CREATE_VENDOR_INVOICE_RECORDS_WIDGET,
   CreateVendorInvoiceRecordsWidget,

@@ -27,11 +27,27 @@ function chunkArray<T>(items: T[], chunkSize: number) {
   return chunks;
 }
 
-/** Build Zoho subform row payload — same fields as legacy `handleSubmittion`. */
-function toZohoSubformRow(row: AddMassSubformRow) {
+function serviceIdOf(row: Record<string, unknown>) {
+  const service = row.OurServices as { id?: unknown } | string | null | undefined;
+  if (service == null || service === "") return "";
+  if (typeof service === "string") return service.trim();
+  return String(service.id ?? "").trim();
+}
+
+/**
+ * Build a Zoho-safe subform row. Never re-send Parent_Id / system / extra
+ * lookups — Deals.Scope_of_Work.OurServices uses
+ * `revalidate_filter_during_edit`, and spreading GET payloads causes
+ * FILTER_CRITERIA_NOT_SATISFIED on PUT.
+ */
+function toZohoSubformRow(
+  row: AddMassSubformRow,
+  existingId?: string,
+) {
   const product: Record<string, unknown> = {
     OurServices: { id: String(row.OurServices) },
   };
+  if (existingId) product.id = existingId;
 
   const startDate = String(row.Start_Date ?? "").trim();
   const endDate = String(row.End_Date ?? "").trim();
@@ -47,34 +63,54 @@ function toZohoSubformRow(row: AddMassSubformRow) {
   return product;
 }
 
+/** Preserve an untouched existing row by id only (avoids lookup revalidation). */
+function preserveExistingSubformRow(row: Record<string, unknown>) {
+  const id = String(row.id ?? "").trim();
+  if (!id) {
+    const serviceId = serviceIdOf(row);
+    if (!serviceId) return null;
+    return { OurServices: { id: serviceId } };
+  }
+  return { id };
+}
+
 /**
  * Merge incoming products into existing subform rows — same rules as
- * widget_logic/index.js `mergeSubformRows`.
+ * widget_logic/index.js `mergeSubformRows`, but with Zoho-safe payloads.
  */
 function mergeSubformRows(
   existingSubForm: unknown,
   newProductsData: AddMassSubformRow[],
 ) {
-  let merged: Record<string, unknown>[] = Array.isArray(existingSubForm)
+  const existingRows: Record<string, unknown>[] = Array.isArray(existingSubForm)
     ? existingSubForm.map((row) => ({ ...(row as Record<string, unknown>) }))
     : [];
 
+  const matchedIds = new Set<string>();
+  const merged: Record<string, unknown>[] = [];
+
   for (const newProduct of newProductsData) {
-    const cleaned = toZohoSubformRow(newProduct);
-    let matchFound = false;
+    const targetServiceId = String(newProduct.OurServices ?? "").trim();
+    const matchIndex = existingRows.findIndex(
+      (row, index) =>
+        !matchedIds.has(String(index)) &&
+        serviceIdOf(row) === targetServiceId,
+    );
 
-    merged = merged.map((existingProduct) => {
-      const service = existingProduct.OurServices as { id?: unknown } | undefined;
-      if (String(service?.id ?? "") === String(newProduct.OurServices)) {
-        matchFound = true;
-        return { ...existingProduct, ...cleaned };
-      }
-      return existingProduct;
-    });
-
-    if (!matchFound) {
-      merged.push(cleaned);
+    if (matchIndex >= 0) {
+      matchedIds.add(String(matchIndex));
+      const existingId = String(existingRows[matchIndex].id ?? "").trim();
+      merged.push(toZohoSubformRow(newProduct, existingId || undefined));
+      continue;
     }
+
+    merged.push(toZohoSubformRow(newProduct));
+  }
+
+  for (let index = 0; index < existingRows.length; index += 1) {
+    if (matchedIds.has(String(index))) continue;
+    const preserved = preserveExistingSubformRow(existingRows[index]);
+    if (preserved) merged.push(preserved);
   }
 
   return merged;
@@ -134,16 +170,23 @@ async function bulkUpdateRecords(
       continue;
     }
 
-    for (const item of results) {
-      const recordId = String(item?.details?.id ?? "unknown");
+    for (let i = 0; i < results.length; i += 1) {
+      const item = results[i];
+      const recordId = String(
+        item?.details?.id ?? batch[i]?.id ?? "unknown",
+      );
       if (String(item?.code ?? "").toUpperCase() === "SUCCESS") {
         successCount += 1;
       } else {
+        const apiName = String(
+          item?.details?.api_name ?? item?.details?.json_path ?? "",
+        ).trim();
+        const base = String(
+          item?.message || item?.code || "Failed to update record",
+        );
         errors.push({
           id: recordId,
-          message: String(
-            item?.message || item?.code || "Failed to update record",
-          ),
+          message: apiName ? `${base} (${apiName})` : base,
         });
       }
     }
