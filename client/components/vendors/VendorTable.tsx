@@ -8,6 +8,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 import { ExternalLink, Menu, Settings2 } from "lucide-react";
 import { TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table";
 import {
@@ -71,8 +72,8 @@ const SELECT_COL = { apiName: "_select" } as const;
 const PINNED_COLUMNS_KEY = "crm-pinned-columns-vendors-v1";
 const COLUMN_WIDTHS_KEY = "crm-column-widths-vendors-v1";
 
-function openVendorRecord(recordId: string) {
-  window.open(getVendorZohoRecordUrl(recordId), "_blank", "noopener,noreferrer");
+function vendorRecordPath(recordId: string) {
+  return `/vendors/${encodeURIComponent(recordId.trim())}`;
 }
 
 type VendorStatusTone = "active" | "closed";
@@ -220,11 +221,13 @@ function VendorCard({
   columns,
   selected,
   onSelectedChange,
+  onOpen,
 }: {
   row: VendorRecord;
   columns: { apiName: string; label: string; dataType: string }[];
   selected: boolean;
   onSelectedChange: (selected: boolean) => void;
+  onOpen: (recordId: string) => void;
 }) {
   const title =
     row.fields.Vendor_Name?.trim() ||
@@ -237,11 +240,11 @@ function VendorCard({
       tabIndex={0}
       title={title}
       data-state={selected ? "selected" : undefined}
-      onClick={() => openVendorRecord(row.id)}
+      onClick={() => onOpen(row.id)}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          openVendorRecord(row.id);
+          onOpen(row.id);
         }
       }}
       className={cn(
@@ -265,7 +268,7 @@ function VendorCard({
           title="Open vendor"
           onClick={(e) => {
             e.stopPropagation();
-            openVendorRecord(row.id);
+            onOpen(row.id);
           }}
         >
           <ExternalLink className="size-4" />
@@ -306,6 +309,13 @@ export default function VendorsTable({
   customViewsRefreshKey = 0,
   onFilterByColumn,
 }: VendorsTableProps) {
+  const router = useRouter();
+  const openVendorRecord = useCallback((recordId: string) => {
+    router.push(vendorRecordPath(recordId));
+  }, [router]);
+  const openVendorInZoho = useCallback((recordId: string) => {
+    window.open(getVendorZohoRecordUrl(recordId), "_blank", "noopener,noreferrer");
+  }, []);
   const { visibleApiNames, setVisibleApiNames } = useVendorVisibleColumns();
   const { pinnedApiNames, togglePinned, isPinned } = usePinnedColumns(PINNED_COLUMNS_KEY);
   const [fieldCatalog, setFieldCatalog] = useState<CrmFieldMeta[]>(FALLBACK_FIELD_CATALOG);
@@ -999,6 +1009,7 @@ export default function VendorsTable({
                       columns={columnMeta}
                       selected={selectedIds.has(row.id)}
                       onSelectedChange={(selected) => toggleRowSelected(row.id, selected)}
+                      onOpen={openVendorRecord}
                     />
                   ))
                 }
@@ -1032,15 +1043,15 @@ export default function VendorsTable({
                             role="link"
                             tabIndex={0}
                             data-state={isSelected ? "selected" : undefined}
-                            title="Click a cell to select. Double-click the cell to edit, then drag the corner handle to fill down. Alt+double-click row to open in Zoho."
+                            title="Click a cell to select. Double-click the cell to edit, then drag the corner handle to fill down. Click the link icon to open the vendor page. Alt+double-click row to open in Zoho."
                             className="crm-row-hover border-crm-border text-crm-text"
                             onDoubleClick={(e) => {
-                              if (e.altKey) openVendorRecord(row.id);
+                              if (e.altKey) openVendorInZoho(row.id);
                             }}
                             onKeyDown={(e) => {
                               if (e.key === "Enter" && e.altKey) {
                                 e.preventDefault();
-                                openVendorRecord(row.id);
+                                openVendorInZoho(row.id);
                               }
                             }}
                           >
