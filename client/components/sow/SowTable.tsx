@@ -8,6 +8,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 import { ExternalLink, Menu, Settings2 } from "lucide-react";
 import { TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table";
 import {
@@ -71,8 +72,8 @@ const SELECT_COL = { apiName: "_select" } as const;
 const PINNED_COLUMNS_KEY = "crm-pinned-columns-sow-v1";
 const COLUMN_WIDTHS_KEY = "crm-column-widths-sow-v1";
 
-function openSowRecord(recordId: string) {
-  window.open(getSowZohoRecordUrl(recordId), "_blank", "noopener,noreferrer");
+function sowRecordPath(recordId: string) {
+  return `/sow/${encodeURIComponent(recordId.trim())}`;
 }
 
 type SowStatusTone = "active" | "closed";
@@ -227,11 +228,13 @@ function SowCard({
   columns,
   selected,
   onSelectedChange,
+  onOpen,
 }: {
   row: SowRecord;
   columns: { apiName: string; label: string; dataType: string }[];
   selected: boolean;
   onSelectedChange: (selected: boolean) => void;
+  onOpen: (recordId: string) => void;
 }) {
   const title =
     row.fields.Deal_Name?.trim() ||
@@ -244,11 +247,11 @@ function SowCard({
       tabIndex={0}
       title={title}
       data-state={selected ? "selected" : undefined}
-      onClick={() => openSowRecord(row.id)}
+      onClick={() => onOpen(row.id)}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          openSowRecord(row.id);
+          onOpen(row.id);
         }
       }}
       className={cn(
@@ -272,7 +275,7 @@ function SowCard({
           title="Open SOW"
           onClick={(e) => {
             e.stopPropagation();
-            openSowRecord(row.id);
+            onOpen(row.id);
           }}
         >
           <ExternalLink className="size-4" />
@@ -313,6 +316,13 @@ export default function SowTable({
   customViewsRefreshKey = 0,
   onFilterByColumn,
 }: SowTableProps) {
+  const router = useRouter();
+  const openSowRecord = useCallback((recordId: string) => {
+    router.push(sowRecordPath(recordId));
+  }, [router]);
+  const openSowInZoho = useCallback((recordId: string) => {
+    window.open(getSowZohoRecordUrl(recordId), "_blank", "noopener,noreferrer");
+  }, []);
   const { visibleApiNames, setVisibleApiNames } = useSowVisibleColumns();
   const { pinnedApiNames, togglePinned, isPinned } = usePinnedColumns(PINNED_COLUMNS_KEY);
   const [fieldCatalog, setFieldCatalog] = useState<CrmFieldMeta[]>(FALLBACK_FIELD_CATALOG);
@@ -998,6 +1008,7 @@ export default function SowTable({
                       columns={columnMeta}
                       selected={selectedIds.has(row.id)}
                       onSelectedChange={(selected) => toggleRowSelected(row.id, selected)}
+                      onOpen={openSowRecord}
                     />
                   ))
                 }
@@ -1031,15 +1042,15 @@ export default function SowTable({
                             role="link"
                             tabIndex={0}
                             data-state={isSelected ? "selected" : undefined}
-                            title="Click a cell to select. Double-click the cell to edit, then drag the corner handle to fill down. Alt+double-click row to open in Zoho."
+                            title="Click a cell to select. Double-click the cell to edit, then drag the corner handle to fill down. Click the link icon to open the SOW page. Alt+double-click row to open in Zoho."
                             className="crm-row-hover border-crm-border text-crm-text"
                             onDoubleClick={(e) => {
-                              if (e.altKey) openSowRecord(row.id);
+                              if (e.altKey) openSowInZoho(row.id);
                             }}
                             onKeyDown={(e) => {
                               if (e.key === "Enter" && e.altKey) {
                                 e.preventDefault();
-                                openSowRecord(row.id);
+                                openSowInZoho(row.id);
                               }
                             }}
                           >

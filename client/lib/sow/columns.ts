@@ -50,8 +50,13 @@ export const FALLBACK_FIELD_CATALOG: CrmFieldMeta[] = [
   },
   { apiName: "Ops_Owner", label: "Ops Owner", dataType: "lookup" },
   { apiName: "Owner", label: "Owner", dataType: "ownerlookup" },
+  { apiName: "SOW_Summary", label: "SOW Summary", dataType: "textarea" },
+  { apiName: "Type", label: "Contract Type", dataType: "picklist" },
+  { apiName: "Currency", label: "Currency", dataType: "picklist" },
+  { apiName: "Exchange_Rate", label: "Exchange Rate", dataType: "double" },
   { apiName: "Created_Time", label: "Created Time", dataType: "datetime" },
   { apiName: "Modified_Time", label: "Modified Time", dataType: "datetime" },
+  { apiName: "Last_Activity_Time", label: "Last Activity Time", dataType: "datetime" },
   { apiName: "Created_By", label: "Created By", dataType: "ownerlookup" },
   { apiName: "Modified_By", label: "Modified By", dataType: "ownerlookup" },
 ];
