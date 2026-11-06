@@ -4,6 +4,7 @@ import { ADD_MASS_BID_WIDGET } from "@/widgets/add-mass-bid";
 import { ADD_MASS_SUBFORM_WIDGET } from "@/widgets/add-mass-subform";
 import { COMPLIANCE_FIELDS_WIDGET } from "@/widgets/compliance-fields";
 import { CREATE_CONTRACT_PDF_WIDGET } from "@/widgets/create-contract-pdf";
+import { CREATE_SOW_RECORD_WIDGET } from "@/widgets/create-sow-record";
 import { CREATE_VENDOR_INVOICE_RECORDS_WIDGET } from "@/widgets/create-vendor-invoice-records";
 import { MASS_RENEWAL_CONTRACTS_WIDGET } from "@/widgets/mass-renewal-contracts";
 import { MISSING_INVOICE_EMAIL_WIDGET } from "@/widgets/missing-invoice-email";
@@ -35,6 +36,7 @@ export const CRM_WIDGETS = [
   MASS_RENEWAL_CONTRACTS_WIDGET,
   SEND_MESSAGE_WIDGET,
   CREATE_CONTRACT_PDF_WIDGET,
+  CREATE_SOW_RECORD_WIDGET,
   COMPLIANCE_FIELDS_WIDGET,
   PO_ADDENDUM_WIDGET,
   CLONE_CONTRACT_WIDGET,
@@ -100,6 +102,11 @@ export {
   CREATE_CONTRACT_PDF_WIDGET,
   CreateContractPdfWidget,
 } from "@/widgets/create-contract-pdf";
+export {
+  CREATE_SOW_RECORD_WIDGET,
+  CREATE_SOW_RECORD_BUTTON_LABEL,
+  CreateSowRecordWidget,
+} from "@/widgets/create-sow-record";
 export {
   COMPLIANCE_FIELDS_WIDGET,
   ComplianceFieldsWidget,
