@@ -2,10 +2,13 @@ import type { CrmWidgetDefinition } from "@/widgets/types";
 import { ACTIVATE_VENDORS_WIDGET } from "@/widgets/activate-vendors";
 import { ADD_MASS_BID_WIDGET } from "@/widgets/add-mass-bid";
 import { ADD_MASS_SUBFORM_WIDGET } from "@/widgets/add-mass-subform";
+import { APPROVED_BY_OPS_WIDGET } from "@/widgets/approved-by-ops";
 import { COMPLIANCE_FIELDS_WIDGET } from "@/widgets/compliance-fields";
+import { CREATE_BILL_IN_BOOKS_WIDGET } from "@/widgets/create-bill-in-books";
 import { CREATE_CONTRACT_PDF_WIDGET } from "@/widgets/create-contract-pdf";
 import { CREATE_SOW_RECORD_WIDGET } from "@/widgets/create-sow-record";
 import { CREATE_VENDOR_INVOICE_RECORDS_WIDGET } from "@/widgets/create-vendor-invoice-records";
+import { GENERATE_BILL_PDF_WIDGET } from "@/widgets/generate-bill-pdf";
 import { MASS_RENEWAL_CONTRACTS_WIDGET } from "@/widgets/mass-renewal-contracts";
 import { MISSING_INVOICE_EMAIL_WIDGET } from "@/widgets/missing-invoice-email";
 import { OLIO_MASS_UPDATE_WIDGET } from "@/widgets/olio-mass-update";
@@ -37,6 +40,9 @@ export const CRM_WIDGETS = [
   SEND_MESSAGE_WIDGET,
   CREATE_CONTRACT_PDF_WIDGET,
   CREATE_SOW_RECORD_WIDGET,
+  APPROVED_BY_OPS_WIDGET,
+  CREATE_BILL_IN_BOOKS_WIDGET,
+  GENERATE_BILL_PDF_WIDGET,
   COMPLIANCE_FIELDS_WIDGET,
   PO_ADDENDUM_WIDGET,
   CLONE_CONTRACT_WIDGET,
@@ -107,6 +113,21 @@ export {
   CREATE_SOW_RECORD_BUTTON_LABEL,
   CreateSowRecordWidget,
 } from "@/widgets/create-sow-record";
+export {
+  APPROVED_BY_OPS_WIDGET,
+  APPROVED_BY_OPS_BUTTON_LABEL,
+  ApprovedByOpsWidget,
+} from "@/widgets/approved-by-ops";
+export {
+  CREATE_BILL_IN_BOOKS_WIDGET,
+  CREATE_BILL_IN_BOOKS_BUTTON_LABEL,
+  CreateBillInBooksWidget,
+} from "@/widgets/create-bill-in-books";
+export {
+  GENERATE_BILL_PDF_WIDGET,
+  GENERATE_BILL_PDF_BUTTON_LABEL,
+  GenerateBillPdfDialog,
+} from "@/widgets/generate-bill-pdf";
 export {
   COMPLIANCE_FIELDS_WIDGET,
   ComplianceFieldsWidget,
