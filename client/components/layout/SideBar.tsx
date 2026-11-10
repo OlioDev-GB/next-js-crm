@@ -412,6 +412,7 @@ function FilterSectionGroup({
   const [open, setOpen] = useState(
     section.id === "system_defined" ||
       section.id === "fields" ||
+      section.id === "subforms" ||
       section.id === "related_modules",
   );
 
@@ -1094,9 +1095,10 @@ export default function SideBar({
     const titles: Record<string, string> = {
       system_defined: "System Defined Filters",
       fields: "Filter By Fields",
+      subforms: "Filter By Subforms",
       related_modules: "Filter By Related Modules",
     };
-    const order = ["system_defined", "fields", "related_modules"] as const;
+    const order = ["system_defined", "fields", "subforms", "related_modules"] as const;
 
     const sourceSections =
       sections.length > 0 ?
@@ -1105,9 +1107,7 @@ export default function SideBar({
           if (fieldMeta.length === 0) return [] as ContractFilterSection[];
           const bySection = new Map<string, ContractFilterFieldMeta[]>();
           for (const field of fieldMeta) {
-            // Fold legacy "subforms" into fields for the 3-section sidebar.
-            const id =
-              field.section === "subforms" ? "fields" : (field.section ?? "fields");
+            const id = field.section ?? "fields";
             const list = bySection.get(id) ?? [];
             list.push(field);
             bySection.set(id, list);
@@ -1120,17 +1120,6 @@ export default function SideBar({
         })();
 
     const byId = new Map(sourceSections.map((section) => [section.id, section]));
-    // Merge any leftover subforms section into fields.
-    const subforms = byId.get("subforms");
-    if (subforms?.fields.length) {
-      const fieldsSection = byId.get("fields");
-      byId.set("fields", {
-        id: "fields",
-        title: titles.fields,
-        fields: [...(fieldsSection?.fields ?? []), ...subforms.fields],
-      });
-      byId.delete("subforms");
-    }
 
     return order
       .map((id) => {

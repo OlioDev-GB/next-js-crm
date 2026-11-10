@@ -73,14 +73,46 @@ const staticSystemViews: ContractFilterFieldMeta[] = [
 
 export const SERVICE_COMPLETIONS_STATIC_ALL_VIEW_ID = "service-completions-all";
 
+/** SC subform filters: Photos / Media only (no child fields). */
+const staticSubformFilters: ContractFilterFieldMeta[] = [
+  {
+    apiName: "Media",
+    label: "Media",
+    dataType: "related_module",
+    operators: [
+      { id: "with", label: "with" },
+      { id: "without", label: "without" },
+    ],
+    options: [],
+    hasOptions: false,
+    section: "subforms",
+    lookupModule: "Media",
+  },
+  {
+    apiName: "Photos",
+    label: "Photos",
+    dataType: "related_module",
+    operators: [
+      { id: "with", label: "with" },
+      { id: "without", label: "without" },
+    ],
+    options: [],
+    hasOptions: false,
+    section: "subforms",
+    lookupModule: "Photos",
+  },
+];
+
 export const SERVICE_COMPLETIONS_STATIC_FILTER_SECTIONS: ContractFilterSection[] = [
   { id: "system_defined", title: "System Defined Filters", fields: staticSystemViews },
   { id: "fields", title: "Filter By Fields", fields: staticFieldFilters },
+  { id: "subforms", title: "Filter By Subforms", fields: staticSubformFilters },
 ];
 
 export const SERVICE_COMPLETIONS_STATIC_FILTER_FIELDS: ContractFilterFieldMeta[] = [
   ...staticSystemViews,
   ...staticFieldFilters,
+  ...staticSubformFilters,
 ];
 
 export const SERVICE_COMPLETIONS_STATIC_RECORDS: ServiceCompletionRecord[] = [

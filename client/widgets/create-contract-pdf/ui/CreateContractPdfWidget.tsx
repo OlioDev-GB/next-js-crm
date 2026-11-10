@@ -15,13 +15,14 @@ type CreateContractPdfWidgetProps = WidgetOpenContext & {
 
 /**
  * Fullscreen host for the Create Contract PDF HTML widget
- * (`/widgets/create-contract-pdf/index.html`) which generates PDFs and
- * calls Zoho Sign via Next.js API routes.
+ * (`/widgets/create-contract-pdf/widget.html`) — port of Zoho
+ * `SOW_Create_Contract_PDF` (Deals/SOW).
  */
 export function CreateContractPdfWidget({
   open,
   onClose,
   selectedRecordIds,
+  module = "Deals",
   className,
 }: CreateContractPdfWidgetProps) {
   const titleId = useId();
@@ -40,7 +41,7 @@ export function CreateContractPdfWidget({
 
   const src =
     recordId ?
-      `/widgets/create-contract-pdf/index.html?recordId=${encodeURIComponent(recordId)}`
+      `/widgets/create-contract-pdf/widget.html?recordId=${encodeURIComponent(recordId)}&module=${encodeURIComponent(module || "Deals")}`
     : "";
 
   return (

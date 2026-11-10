@@ -478,6 +478,7 @@ const EXCLUDED_RELATED_LIST_TYPES = new Set([
 export const FILTER_SECTION_ORDER = [
   "system_defined",
   "fields",
+  "subforms",
   "related_modules",
 ];
 
@@ -485,7 +486,7 @@ export const FILTER_SECTION_ORDER = [
 export const FILTER_SECTION_TITLES = {
   system_defined: "System Defined Filters",
   fields: "Filter By Fields",
-  subforms: "Filter By Fields",
+  subforms: "Filter By Subforms",
   related_modules: "Filter By Related Modules",
 };
 
@@ -942,18 +943,24 @@ function discoverSubformModules(moduleFields) {
  * @param {import("@/lib/contracts/filterTypes").ContractFilterFieldMeta[]} relatedFields
  */
 function assembleFilterMetaSections(systemFields, moduleFields, subformFields, relatedFields) {
-  // Subform fields fold into "Filter By Fields" — sidebar uses 3 sections only.
-  const fieldSectionFields = [...moduleFields, ...subformFields].map((field) =>
-    field.section === "subforms" ? { ...field, section: /** @type {const} */ ("fields") } : field,
+  // Keep subform children in their own sidebar section (matches Zoho CRM filter UI).
+  const normalizedSubforms = subformFields.map((field) =>
+    field.section === "subforms" ? field : { ...field, section: /** @type {const} */ ("subforms") },
   );
-  const allFields = [...systemFields, ...fieldSectionFields, ...relatedFields];
+  const allFields = [
+    ...systemFields,
+    ...moduleFields,
+    ...normalizedSubforms,
+    ...relatedFields,
+  ];
   /** @type {import("@/lib/contracts/filterTypes").ContractFilterSection[]} */
   const sections = FILTER_SECTION_ORDER.map((id) => ({
     id,
     title: FILTER_SECTION_TITLES[id],
     fields:
       id === "system_defined" ? systemFields
-      : id === "fields" ? fieldSectionFields
+      : id === "fields" ? moduleFields
+      : id === "subforms" ? normalizedSubforms
       : relatedFields,
   })).filter((section) => section.fields.length > 0);
 
@@ -1102,31 +1109,56 @@ export async function loadModuleFilterMeta(module) {
     const subformFields = [];
     const subformModules = discoverSubformModules(body.fields);
 
-    await Promise.all(
-      [...subformModules.entries()].map(async ([moduleApi, groupLabel]) => {
-        try {
-          const subUrl = getZohoModuleFieldsUrl(moduleApi);
-          const { res: subRes, body: subBody } = await fetchZohoJson(subUrl);
-          if (!subRes.ok || !Array.isArray(subBody.fields)) return;
+    // SC / SOW / VI: one filter per subform (no child fields).
+    if (
+      module === "ServiceCompletions" ||
+      module === "Deals" ||
+      module === "Vendor_Invoices"
+    ) {
+      for (const [moduleApi, groupLabel] of subformModules.entries()) {
+        const label =
+          module === "Vendor_Invoices" && moduleApi === "Line_Item_List" ?
+            "Line Item"
+          : String(groupLabel ?? moduleApi).trim() || moduleApi;
+        subformFields.push({
+          apiName: moduleApi,
+          label,
+          dataType: "related_module",
+          operators: getOperatorsForDataType("related_module"),
+          options: [],
+          hasOptions: false,
+          section: /** @type {const} */ ("subforms"),
+          lookupModule: moduleApi,
+        });
+      }
+      subformFields.sort((a, b) => a.label.localeCompare(b.label));
+    } else {
+      await Promise.all(
+        [...subformModules.entries()].map(async ([moduleApi, groupLabel]) => {
+          try {
+            const subUrl = getZohoModuleFieldsUrl(moduleApi);
+            const { res: subRes, body: subBody } = await fetchZohoJson(subUrl);
+            if (!subRes.ok || !Array.isArray(subBody.fields)) return;
 
-          for (const raw of subBody.fields) {
-            const mapped = mapFilterField(raw, "subforms", { groupLabel });
-            if (!mapped) continue;
-            // Parent-list filters cannot use subform Layout; Zoho returns 500.
-            if (mapped.apiName === "Layout" || mapped.dataType === "layout") continue;
-            mapped.apiName = `${moduleApi}.${mapped.apiName}`;
-            subformFields.push(mapped);
+            for (const raw of subBody.fields) {
+              const mapped = mapFilterField(raw, "subforms", { groupLabel });
+              if (!mapped) continue;
+              // Parent-list filters cannot use subform Layout; Zoho returns 500.
+              if (mapped.apiName === "Layout" || mapped.dataType === "layout") continue;
+              mapped.apiName = `${moduleApi}.${mapped.apiName}`;
+              subformFields.push(mapped);
+            }
+          } catch (err) {
+            console.error(`Zoho subform fields failed (${moduleApi}):`, err);
           }
-        } catch (err) {
-          console.error(`Zoho subform fields failed (${moduleApi}):`, err);
-        }
-      }),
-    );
+        }),
+      );
 
-    subformFields.sort((a, b) => {
-      const g = (a.groupLabel ?? "").localeCompare(b.groupLabel ?? "");
-      return g !== 0 ? g : a.label.localeCompare(b.label);
-    });
+      subformFields.sort((a, b) => {
+        const g = (a.groupLabel ?? "").localeCompare(b.groupLabel ?? "");
+        return g !== 0 ? g : a.label.localeCompare(b.label);
+      });
+    }
 
     const layoutOptions = await loadModuleLayoutOptions(module).catch((err) => {
       console.error(`Zoho layouts for filter options failed (${module}):`, err);

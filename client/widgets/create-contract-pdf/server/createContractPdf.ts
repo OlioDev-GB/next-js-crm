@@ -14,6 +14,8 @@ import {
 } from "@/lib/zoho";
 
 export const SEND_ZOHO_SIGN_FUNCTION_NAME = "sendzohosigncontracts" as const;
+/** SOW Create Contract PDF widget calls this casing. */
+export const SEND_ZOHO_SIGN_FUNCTION_NAME_ALT = "SendZohoSignContracts" as const;
 
 const CONTRACT_PDF_FIELDS = [
   "Name",
@@ -44,7 +46,7 @@ const CONTRACT_PDF_FIELDS = [
 ] as const;
 
 const RELATED_FIELD_MAP: Record<string, string[]> = {
-  Accounts: ["Account_Name", "Email", "Name"],
+  Accounts: ["Account_Name", "Email", "Name", "Site_Map_Attachment"],
   Vendors: [
     "Vendor_Name",
     "Email",
@@ -52,8 +54,26 @@ const RELATED_FIELD_MAP: Record<string, string[]> = {
     "Last_Name",
     "Name",
   ],
-  Products: ["Product_Name", "Description", "Product_Category"],
+  Products: [
+    "Product_Name",
+    "Description",
+    "Product_Category",
+    "Name",
+  ],
 };
+
+const RELATED_LIST_FIELDS: Record<string, string> = {
+  Products: "id,Product_Name,Description,Product_Category,Name",
+};
+
+const ALLOWED_RECORD_MODULES = new Set([
+  "Deals",
+  "Contracts",
+  "Accounts",
+  "Vendors",
+  "Products",
+  "users",
+]);
 
 export type SendZohoSignPayload = {
   id: string;
@@ -102,6 +122,36 @@ export async function loadContractForPdf(recordId: string) {
   return row;
 }
 
+/** Full Deals/SOW record (SOW Create Contract PDF needs Scope_of_Work + many fields). */
+export async function loadDealForPdf(recordId: string) {
+  const id = String(recordId ?? "").trim();
+  if (!id) throw new Error("SOW id is required.");
+
+  const { res, body } = await fetchZohoJson(
+    `${ZOHO_CRM_BASE}/Deals/${encodeURIComponent(id)}`,
+  );
+  if (!res.ok) {
+    const detail = body?.message || body?.code || `HTTP ${res.status}`;
+    throw new Error(String(detail));
+  }
+  const row = Array.isArray(body?.data) ? body.data[0] : null;
+  if (!row) throw new Error("SOW record not found.");
+  return row as Record<string, unknown>;
+}
+
+/**
+ * Load a CRM record in Zoho SDK shape `{ data: [row] }` or `{ users: [...] }`.
+ */
+export async function loadRecord(moduleName: string, recordId: string) {
+  const mod = String(moduleName ?? "").trim();
+  const id = String(recordId ?? "").trim();
+  if (!mod || !id) throw new Error("module and id are required.");
+  if (!ALLOWED_RECORD_MODULES.has(mod) && mod.toLowerCase() !== "users") {
+    throw new Error(`Module not allowed: ${mod}`);
+  }
+  return loadRelatedRecord(mod, id);
+}
+
 /**
  * Load a related record in Zoho CRM SDK response shape.
  * - users → `{ users: [...] }`
@@ -124,7 +174,14 @@ export async function loadRelatedRecord(moduleName: string, recordId: string) {
     if (Array.isArray(body?.users)) return body;
     if (body?.users) return { users: [body.users] };
     if (body?.id) return { users: [body] };
+    // Some tenants return `{ data: [user] }` for users-by-id
+    if (Array.isArray(body?.data)) return { users: body.data };
     return body;
+  }
+
+  if (mod === "Deals") {
+    const row = await loadDealForPdf(id);
+    return { data: [row] };
   }
 
   if (mod === "Contracts") {
@@ -135,6 +192,67 @@ export async function loadRelatedRecord(moduleName: string, recordId: string) {
   const fields = RELATED_FIELD_MAP[mod] ?? ["Name", "Email"];
   const row = await fetchZohoRecordById(mod, id, fields);
   return { data: [row] };
+}
+
+/** Related list (e.g. Deals → Products). Zoho requires `fields`. */
+export async function loadRelatedList(args: {
+  moduleName: string;
+  recordId: string;
+  related: string;
+  page?: number;
+  perPage?: number;
+}) {
+  const mod = String(args.moduleName || "").trim();
+  const id = String(args.recordId || "").trim();
+  const related = String(args.related || "").trim();
+  if (!mod || !id || !related) {
+    throw new Error("module, id, and related are required.");
+  }
+  if (mod !== "Deals" && mod !== "Contracts") {
+    throw new Error(`Related list not allowed for module: ${mod}`);
+  }
+
+  const page = Math.max(1, Number(args.page) || 1);
+  const perPage = Math.min(200, Math.max(1, Number(args.perPage) || 100));
+  const fields = RELATED_LIST_FIELDS[related] || "id,Name";
+  const url =
+    `${ZOHO_CRM_BASE}/${encodeURIComponent(mod)}/${encodeURIComponent(id)}/` +
+    `${encodeURIComponent(related)}?fields=${encodeURIComponent(fields)}` +
+    `&page=${page}&per_page=${perPage}`;
+
+  const { res, body } = await fetchZohoJson(url);
+  if (res.status === 204) return { data: [] };
+  if (!res.ok) {
+    const detail = body?.message || body?.code || `HTTP ${res.status}`;
+    throw new Error(String(detail));
+  }
+  if (!body || !Array.isArray(body.data)) return { data: [] };
+  return body;
+}
+
+/** Generic update for Deals/Contracts (sign status fields, etc.). */
+export async function updateCrmRecord(
+  moduleName: string,
+  apiData: Record<string, unknown>,
+) {
+  const mod = String(moduleName || "").trim() || "Deals";
+  if (mod !== "Deals" && mod !== "Contracts") {
+    throw new Error(`Update not allowed for module: ${mod}`);
+  }
+  if (!apiData?.id) throw new Error("APIData.id is required.");
+
+  const { res, body } = await fetchZohoJson(
+    `${ZOHO_CRM_BASE}/${encodeURIComponent(mod)}`,
+    { method: "PUT", body: { data: [apiData], trigger: [] } },
+  );
+  const result = Array.isArray(body?.data) ? body.data[0] : null;
+  const code = String(result?.code ?? body?.code ?? "").toUpperCase();
+  if (!res.ok || (code && code !== "SUCCESS")) {
+    const detail =
+      result?.message || body?.message || result?.code || body?.code || `HTTP ${res.status}`;
+    throw new Error(String(detail));
+  }
+  return body;
 }
 
 /**
@@ -361,23 +479,35 @@ export async function sendZohoSignContract(
     owner_email,
   };
 
-  let { res, body } = await executeZohoCrmFunction(
-    SEND_ZOHO_SIGN_FUNCTION_NAME,
-    args,
-    { authType: "apikey" },
-  );
+  async function runSign(functionName: string, authType: "apikey" | "oauth") {
+    return executeZohoCrmFunction(functionName, args, { authType });
+  }
 
+  // CRM SOW widget uses SendZohoSignContracts; older Contracts port used sendzohosigncontracts.
+  let functionName = SEND_ZOHO_SIGN_FUNCTION_NAME_ALT;
+  let { res, body } = await runSign(functionName, "apikey");
   let code = String(body?.code ?? "").toUpperCase();
+
+  if (
+    !res.ok ||
+    code === "NOT_ACTIVE" ||
+    code === "AUTHENTICATION_FAILURE" ||
+    code === "INVALID_FUNCTION" ||
+    /invalid|not found|inactive/i.test(String(body?.message ?? ""))
+  ) {
+    functionName = SEND_ZOHO_SIGN_FUNCTION_NAME;
+    const alt = await runSign(functionName, "apikey");
+    res = alt.res;
+    body = alt.body;
+    code = String(body?.code ?? "").toUpperCase();
+  }
+
   if (
     !res.ok ||
     code === "NOT_ACTIVE" ||
     code === "AUTHENTICATION_FAILURE"
   ) {
-    const fallback = await executeZohoCrmFunction(
-      SEND_ZOHO_SIGN_FUNCTION_NAME,
-      args,
-      { authType: "oauth" },
-    );
+    const fallback = await runSign(functionName, "oauth");
     res = fallback.res;
     body = fallback.body;
     code = String(body?.code ?? "").toUpperCase();
@@ -418,10 +548,15 @@ export async function updateContractSignStatus(payload: {
   id: string;
   contractType: "Client" | "Vendor";
   requestId: string;
+  moduleName?: string;
 }) {
   const id = String(payload.id ?? "").trim();
   const requestId = String(payload.requestId ?? "").trim();
-  if (!id) throw new Error("Contract id is required.");
+  const moduleName =
+    String(payload.moduleName ?? "Deals").trim() === "Contracts" ?
+      "Contracts"
+    : "Deals";
+  if (!id) throw new Error("Record id is required.");
   if (!requestId) throw new Error("requestId is required.");
 
   const fields =
@@ -435,17 +570,5 @@ export async function updateContractSignStatus(payload: {
         Client_Sign_Req_Id: requestId,
       };
 
-  const { res, body } = await fetchZohoJson(`${ZOHO_CRM_BASE}/Contracts`, {
-    method: "PUT",
-    body: { data: [{ id, ...fields }], trigger: ["workflow"] },
-  });
-
-  const result = Array.isArray(body?.data) ? body.data[0] : null;
-  const code = String(result?.code ?? body?.code ?? "").toUpperCase();
-  if (!res.ok || (code && code !== "SUCCESS")) {
-    const detail =
-      result?.message || body?.message || result?.code || body?.code || `HTTP ${res.status}`;
-    throw new Error(String(detail));
-  }
-  return { ok: true, result };
+  return updateCrmRecord(moduleName, { id, ...fields });
 }

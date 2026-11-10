@@ -72,14 +72,33 @@ const staticSystemViews: ContractFilterFieldMeta[] = [
 
 export const VENDOR_INVOICES_STATIC_ALL_VIEW_ID = "vendor-invoices-all";
 
+/** VI subform filters: Line Item only (no child fields). */
+const staticSubformFilters: ContractFilterFieldMeta[] = [
+  {
+    apiName: "Line_Item_List",
+    label: "Line Item",
+    dataType: "related_module",
+    operators: [
+      { id: "with", label: "with" },
+      { id: "without", label: "without" },
+    ],
+    options: [],
+    hasOptions: false,
+    section: "subforms",
+    lookupModule: "Line_Item_List",
+  },
+];
+
 export const VENDOR_INVOICES_STATIC_FILTER_SECTIONS: ContractFilterSection[] = [
   { id: "system_defined", title: "System Defined Filters", fields: staticSystemViews },
   { id: "fields", title: "Filter By Fields", fields: staticFieldFilters },
+  { id: "subforms", title: "Filter By Subforms", fields: staticSubformFilters },
 ];
 
 export const VENDOR_INVOICES_STATIC_FILTER_FIELDS: ContractFilterFieldMeta[] = [
   ...staticSystemViews,
   ...staticFieldFilters,
+  ...staticSubformFilters,
 ];
 
 export const VENDOR_INVOICES_STATIC_RECORDS: VendorInvoiceRecord[] = [

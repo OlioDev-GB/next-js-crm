@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
@@ -8,8 +9,8 @@ import {
   FileText,
   Loader2,
   MapPin,
-  Pencil,
   Plus,
+  ScrollText,
   Send,
   Tag,
   Trash2,
@@ -35,6 +36,26 @@ import {
   ProposalTab,
   TimelineTab,
 } from "@/components/sow/detail/SowDetailTabPanels";
+import {
+  GENERATE_CLIENT_PROPOSAL_BUTTON_LABEL,
+  GenerateClientProposalWidget,
+} from "@/widgets/generate-client-proposal";
+import {
+  SEND_SOW_BUTTON_LABEL,
+  SendSowWidget,
+} from "@/widgets/send-sow";
+import {
+  CREATE_CONTRACT_PDF_BUTTON_LABEL,
+  CreateContractPdfWidget,
+} from "@/widgets/create-contract-pdf";
+import {
+  OPPORTUNITY_SPOTTED_STAGE,
+  OpportunitySpottedWidget,
+} from "@/widgets/opportunity-spotted";
+import {
+  CREATE_BID_BUTTON_LABEL,
+  CreateBidDialog,
+} from "@/widgets/create-bid";
 
 const OLIO_GREEN = "#1f6b3a";
 const OLIO_GREEN_DARK = "#16522c";
@@ -217,10 +238,17 @@ function NotesBlock({
 }
 
 export default function SowRecordDetail({ recordId }: SowRecordDetailProps) {
+  const router = useRouter();
   const [record, setRecord] = useState<SowDetailRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<SowDetailTabId>("overview");
+  const [proposalOpen, setProposalOpen] = useState(false);
+  const [sendSowOpen, setSendSowOpen] = useState(false);
+  const [contractPdfOpen, setContractPdfOpen] = useState(false);
+  const [opportunitySpottedOpen, setOpportunitySpottedOpen] = useState(false);
+  const [createBidOpen, setCreateBidOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
@@ -258,23 +286,86 @@ export default function SowRecordDetail({ recordId }: SowRecordDetailProps) {
   const title = displayOrDash(fields.SOWID || fields.Deal_Name);
   const stage = displayOrDash(fields.Stage);
 
+  const handleDelete = useCallback(async () => {
+    const label = title === "-" ? "this SOW" : title;
+    const ok = window.confirm(
+      `Delete ${label}?\n\nThis permanently deletes the SOW in Zoho CRM. This cannot be undone.`,
+    );
+    if (!ok || deleting) return;
+
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/sow/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [recordId] }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        message?: string;
+        error?: string;
+      };
+      if (!res.ok || !data.ok) {
+        throw new Error(data.message || data.error || "Failed to delete SOW.");
+      }
+      router.push("/sow");
+    } catch (err) {
+      window.alert(err instanceof Error ? err.message : "Failed to delete SOW.");
+    } finally {
+      setDeleting(false);
+    }
+  }, [deleting, recordId, router, title]);
+
+  const isOpportunitySpotted =
+    stage.trim().toLowerCase() === OPPORTUNITY_SPOTTED_STAGE.toLowerCase();
+
   const headerActions = (
     <div className="flex flex-wrap items-center gap-1.5">
-      <ActionButton href={zohoUrl}>{stage === "-" ? "Stage" : `${stage} Stage`}</ActionButton>
-      <ActionButton href={zohoUrl} icon={<FileText className="size-3.5" />}>
-        create contract PDF
+      {isOpportunitySpotted ?
+        <ActionButton onClick={() => setOpportunitySpottedOpen(true)}>
+          {OPPORTUNITY_SPOTTED_STAGE} Stage
+        </ActionButton>
+      : <ActionButton href={zohoUrl}>
+          {stage === "-" ? "Stage" : `${stage} Stage`}
+        </ActionButton>
+      }
+      <ActionButton
+        onClick={() => setProposalOpen(true)}
+        icon={<ScrollText className="size-3.5" />}
+      >
+        {GENERATE_CLIENT_PROPOSAL_BUTTON_LABEL}
       </ActionButton>
-      <ActionButton href={zohoUrl} icon={<Send className="size-3.5" />}>
-        Send SOW
+      <ActionButton
+        onClick={() => setContractPdfOpen(true)}
+        icon={<FileText className="size-3.5" />}
+      >
+        {CREATE_CONTRACT_PDF_BUTTON_LABEL}
+      </ActionButton>
+      <ActionButton
+        onClick={() => setSendSowOpen(true)}
+        icon={<Send className="size-3.5" />}
+      >
+        {SEND_SOW_BUTTON_LABEL}
+      </ActionButton>
+      <ActionButton
+        onClick={() => setCreateBidOpen(true)}
+        icon={<Plus className="size-3.5" />}
+      >
+        {CREATE_BID_BUTTON_LABEL}
       </ActionButton>
       <ActionButton href={zohoUrl} icon={<MapPin className="size-3.5" />}>
         Map Tool
       </ActionButton>
-      <ActionButton href={zohoUrl} icon={<Pencil className="size-3.5" />}>
-        Edit
-      </ActionButton>
-      <ActionButton href={zohoUrl} icon={<Trash2 className="size-3.5" />} danger>
-        <span className="sr-only">Delete</span>
+      <ActionButton
+        onClick={() => void handleDelete()}
+        icon={
+          deleting ?
+            <Loader2 className="size-3.5 animate-spin" />
+          : <Trash2 className="size-3.5" />
+        }
+        danger
+      >
+        <span className="sr-only">{deleting ? "Deleting" : "Delete"}</span>
       </ActionButton>
     </div>
   );
@@ -380,6 +471,56 @@ export default function SowRecordDetail({ recordId }: SowRecordDetailProps) {
           <AllFieldsTab record={record} />
         : null}
       </div>
+
+      <GenerateClientProposalWidget
+        open={proposalOpen}
+        onClose={() => {
+          setProposalOpen(false);
+          void load();
+        }}
+        selectedRecordIds={[recordId]}
+        module="Deals"
+      />
+
+      <SendSowWidget
+        open={sendSowOpen}
+        onClose={() => {
+          setSendSowOpen(false);
+          void load();
+        }}
+        selectedRecordIds={[recordId]}
+        module="Deals"
+      />
+
+      <CreateContractPdfWidget
+        open={contractPdfOpen}
+        onClose={() => {
+          setContractPdfOpen(false);
+          void load();
+        }}
+        selectedRecordIds={[recordId]}
+        module="Deals"
+      />
+
+      <OpportunitySpottedWidget
+        open={opportunitySpottedOpen}
+        onClose={() => {
+          setOpportunitySpottedOpen(false);
+          void load();
+        }}
+        selectedRecordIds={[recordId]}
+        module="Deals"
+      />
+
+      <CreateBidDialog
+        open={createBidOpen}
+        onClose={() => {
+          setCreateBidOpen(false);
+          void load();
+        }}
+        selectedRecordIds={[recordId]}
+        module="Deals"
+      />
     </div>
   );
 }

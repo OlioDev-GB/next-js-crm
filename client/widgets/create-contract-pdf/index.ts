@@ -1,10 +1,14 @@
 import type { CrmWidgetDefinition } from "@/widgets/types";
 
-/** Button label on the contract record view Buttons menu. */
-export const CREATE_CONTRACT_PDF_BUTTON_LABEL = "Create Contract PDF" as const;
+/** Zoho SOW detail custom button label. */
+export const CREATE_CONTRACT_PDF_BUTTON_LABEL = "create contract PDF" as const;
 
 /** Widget modal title. */
-export const CREATE_CONTRACT_PDF_WIDGET_NAME = "Contract Generator" as const;
+export const CREATE_CONTRACT_PDF_WIDGET_NAME = "Create Contract PDF" as const;
+
+/** Zoho custom button id — Deals/SOW detail view. */
+export const CREATE_CONTRACT_PDF_ZOHO_BUTTON_ID =
+  "2168928000036165043" as const;
 
 export const CREATE_CONTRACT_PDF_WIDGET = {
   id: "create-contract-pdf",

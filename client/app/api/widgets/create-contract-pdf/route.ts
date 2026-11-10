@@ -1,35 +1,60 @@
 /**
- * Single API entry for Create Contract PDF widget.
- * Dispatches on `?action=` — replaces separate contract/related/me/upload/send-sign/status routes.
+ * API for Create Contract PDF widget (SOW / Deals CRM port).
  *
- * GET  ?action=contract&id=
- * GET  ?action=related&module=&id=
  * GET  ?action=me
- * POST ?action=upload          (multipart: file, contractId)
- * POST ?action=send-sign       (JSON)
- * PATCH ?action=status         (JSON)
+ * GET  ?action=record&module=&id=
+ * GET  ?action=related-list&module=&id=&related=&page=&per_page=
+ * GET  ?action=contract&id=          (legacy Contracts host)
+ * GET  ?action=related&module=&id=   (legacy)
+ * POST ?action=upload
+ * POST ?action=function              { name, arguments }
+ * POST ?action=update                { Entity, APIData }
+ * POST ?action=send-sign             (legacy)
+ * PATCH ?action=status               (legacy)
  */
 
 import {
   loadContractForPdf,
   loadCurrentCrmUser,
+  loadRecord,
+  loadRelatedList,
   loadRelatedRecord,
   sendZohoSignContract,
   updateContractSignStatus,
+  updateCrmRecord,
   uploadPdfFileToZoho,
   type SendZohoSignPayload,
 } from "@/widgets/create-contract-pdf/server/createContractPdf";
 
-const ALLOWED_MODULES = new Set([
-  "Contracts",
-  "Accounts",
-  "Vendors",
-  "Products",
-  "users",
-]);
-
 function actionOf(request: Request) {
   return new URL(request.url).searchParams.get("action")?.trim() || "";
+}
+
+function parseSignArgs(body: {
+  arguments?: string | Record<string, unknown>;
+  [key: string]: unknown;
+}): SendZohoSignPayload {
+  let args: Record<string, unknown> = body;
+  if (body.arguments != null) {
+    args =
+      typeof body.arguments === "string" ?
+        (JSON.parse(body.arguments) as Record<string, unknown>)
+      : (body.arguments as Record<string, unknown>);
+  }
+  return {
+    id: typeof args.id === "string" ? args.id : String(args.id ?? ""),
+    file_id:
+      typeof args.file_id === "string" ?
+        args.file_id
+      : String(args.file_id ?? ""),
+    signature_fields: args.signature_fields ?? [],
+    recipient_name:
+      typeof args.recipient_name === "string" ? args.recipient_name : "",
+    recipient_email:
+      typeof args.recipient_email === "string" ? args.recipient_email : "",
+    owner_email:
+      typeof args.owner_email === "string" ? args.owner_email : "",
+  };
 }
 
 export async function GET(request: Request) {
@@ -41,6 +66,37 @@ export async function GET(request: Request) {
       return Response.json(await loadCurrentCrmUser());
     }
 
+    if (action === "record") {
+      const moduleName = searchParams.get("module")?.trim() || "Deals";
+      const id = searchParams.get("id")?.trim() || "";
+      if (!id) {
+        return Response.json({ error: "Missing id" }, { status: 400 });
+      }
+      return Response.json(await loadRecord(moduleName, id));
+    }
+
+    if (action === "related-list") {
+      const moduleName = searchParams.get("module")?.trim() || "Deals";
+      const id = searchParams.get("id")?.trim() || "";
+      const related = searchParams.get("related")?.trim() || "";
+      if (!id || !related) {
+        return Response.json(
+          { error: "id and related are required" },
+          { status: 400 },
+        );
+      }
+      return Response.json(
+        await loadRelatedList({
+          moduleName,
+          recordId: id,
+          related,
+          page: Number(searchParams.get("page") || 1),
+          perPage: Number(searchParams.get("per_page") || 100),
+        }),
+      );
+    }
+
+    // Legacy Contracts host actions
     if (action === "contract") {
       const id = searchParams.get("id")?.trim() || "";
       if (!id) {
@@ -56,12 +112,6 @@ export async function GET(request: Request) {
       if (!moduleName || !id) {
         return Response.json(
           { error: "module and id are required" },
-          { status: 400 },
-        );
-      }
-      if (!ALLOWED_MODULES.has(moduleName)) {
-        return Response.json(
-          { error: `Module not allowed: ${moduleName}` },
           { status: 400 },
         );
       }
@@ -90,7 +140,8 @@ export async function POST(request: Request) {
     if (action === "upload") {
       const form = await request.formData();
       const file = form.get("file");
-      const contractId = String(form.get("contractId") ?? "").trim();
+      const recordId =
+        String(form.get("recordId") ?? form.get("contractId") ?? "").trim();
       if (!(file instanceof File)) {
         return Response.json({ error: "Missing file" }, { status: 400 });
       }
@@ -101,41 +152,20 @@ export async function POST(request: Request) {
           type: file.type || "application/pdf",
           bytes: buffer,
         },
-        { contractId },
+        { contractId: recordId },
       );
       return Response.json({
         data: [{ details: { id: fileId }, code: "SUCCESS" }],
       });
     }
 
-    if (action === "send-sign") {
-      const body = (await request.json().catch(() => ({}))) as Partial<
-        SendZohoSignPayload
-      > & { arguments?: string | Record<string, unknown> };
-
-      let args: Partial<SendZohoSignPayload> = body;
-      if (body.arguments != null) {
-        args =
-          typeof body.arguments === "string" ?
-            (JSON.parse(body.arguments) as Partial<SendZohoSignPayload>)
-          : (body.arguments as Partial<SendZohoSignPayload>);
-      }
-
-      const payload: SendZohoSignPayload = {
-        id: typeof args.id === "string" ? args.id : String(args.id ?? ""),
-        file_id:
-          typeof args.file_id === "string" ?
-            args.file_id
-          : String(args.file_id ?? ""),
-        signature_fields: args.signature_fields ?? [],
-        recipient_name:
-          typeof args.recipient_name === "string" ? args.recipient_name : "",
-        recipient_email:
-          typeof args.recipient_email === "string" ? args.recipient_email : "",
-        owner_email:
-          typeof args.owner_email === "string" ? args.owner_email : "",
+    if (action === "function" || action === "send-sign") {
+      const body = (await request.json().catch(() => ({}))) as {
+        name?: string;
+        arguments?: string | Record<string, unknown>;
+        [key: string]: unknown;
       };
-
+      const payload = parseSignArgs(body);
       const result = await sendZohoSignContract(payload);
       if (!result.ok) {
         return Response.json(
@@ -170,6 +200,19 @@ export async function POST(request: Request) {
             : JSON.stringify(result.output ?? {}),
         },
       });
+    }
+
+    if (action === "update") {
+      const body = (await request.json().catch(() => ({}))) as {
+        Entity?: string;
+        APIData?: Record<string, unknown>;
+      };
+      return Response.json(
+        await updateCrmRecord(
+          String(body.Entity || "Deals"),
+          body.APIData || {},
+        ),
+      );
     }
 
     return Response.json(
@@ -227,6 +270,7 @@ export async function PATCH(request: Request) {
         id,
         contractType: isVendor ? "Vendor" : "Client",
         requestId,
+        moduleName: String(body.Entity || "Deals"),
       });
       return Response.json({ data: [{ code: "SUCCESS", details: result }] });
     }
@@ -246,6 +290,7 @@ export async function PATCH(request: Request) {
       id,
       contractType,
       requestId,
+      moduleName: String(body.Entity || "Deals"),
     });
     return Response.json({ data: [{ code: "SUCCESS", details: result }] });
   } catch (error) {

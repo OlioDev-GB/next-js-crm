@@ -74,14 +74,46 @@ const staticSystemViews: ContractFilterFieldMeta[] = [
 
 export const SOW_STATIC_ALL_VIEW_ID = "sow-all";
 
+/** SOW subform filters: POs / Scope of Work only (no child fields). */
+const staticSubformFilters: ContractFilterFieldMeta[] = [
+  {
+    apiName: "POs",
+    label: "POs",
+    dataType: "related_module",
+    operators: [
+      { id: "with", label: "with" },
+      { id: "without", label: "without" },
+    ],
+    options: [],
+    hasOptions: false,
+    section: "subforms",
+    lookupModule: "POs",
+  },
+  {
+    apiName: "Scope_of_Work",
+    label: "Scope of Work",
+    dataType: "related_module",
+    operators: [
+      { id: "with", label: "with" },
+      { id: "without", label: "without" },
+    ],
+    options: [],
+    hasOptions: false,
+    section: "subforms",
+    lookupModule: "Scope_of_Work",
+  },
+];
+
 export const SOW_STATIC_FILTER_SECTIONS: ContractFilterSection[] = [
   { id: "system_defined", title: "System Defined Filters", fields: staticSystemViews },
   { id: "fields", title: "Filter By Fields", fields: staticFieldFilters },
+  { id: "subforms", title: "Filter By Subforms", fields: staticSubformFilters },
 ];
 
 export const SOW_STATIC_FILTER_FIELDS: ContractFilterFieldMeta[] = [
   ...staticSystemViews,
   ...staticFieldFilters,
+  ...staticSubformFilters,
 ];
 
 export const SOW_STATIC_RECORDS: SowRecord[] = [

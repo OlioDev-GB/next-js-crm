@@ -4,6 +4,7 @@ import { ADD_MASS_BID_WIDGET } from "@/widgets/add-mass-bid";
 import { ADD_MASS_SUBFORM_WIDGET } from "@/widgets/add-mass-subform";
 import { APPROVED_BY_OPS_WIDGET } from "@/widgets/approved-by-ops";
 import { COMPLIANCE_FIELDS_WIDGET } from "@/widgets/compliance-fields";
+import { CREATE_BID_WIDGET } from "@/widgets/create-bid";
 import { CREATE_BILL_IN_BOOKS_WIDGET } from "@/widgets/create-bill-in-books";
 import { CREATE_CONTRACT_PDF_WIDGET } from "@/widgets/create-contract-pdf";
 import { CREATE_SOW_RECORD_WIDGET } from "@/widgets/create-sow-record";
@@ -39,6 +40,7 @@ export const CRM_WIDGETS = [
   MASS_RENEWAL_CONTRACTS_WIDGET,
   SEND_MESSAGE_WIDGET,
   CREATE_CONTRACT_PDF_WIDGET,
+  CREATE_BID_WIDGET,
   CREATE_SOW_RECORD_WIDGET,
   APPROVED_BY_OPS_WIDGET,
   CREATE_BILL_IN_BOOKS_WIDGET,
@@ -108,6 +110,11 @@ export {
   CREATE_CONTRACT_PDF_WIDGET,
   CreateContractPdfWidget,
 } from "@/widgets/create-contract-pdf";
+export {
+  CREATE_BID_WIDGET,
+  CREATE_BID_BUTTON_LABEL,
+  CreateBidDialog,
+} from "@/widgets/create-bid";
 export {
   CREATE_SOW_RECORD_WIDGET,
   CREATE_SOW_RECORD_BUTTON_LABEL,

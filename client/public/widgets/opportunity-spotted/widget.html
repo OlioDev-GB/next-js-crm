@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Opportunity Spotted</title>
+    <script src="zoho-shim.js"></script>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./style/index.css" />
+  </head>
+  <body>
+    <div
+      class="main-container w-screen h-screen flex items-center justify-center bg-gray-100 relative"
+      id="container"
+    >
+      <!-- data-container -->
+      <div
+        id="data-container"
+        class="w-full max-w-md opacity-0 hidden fade-in bg-white p-8 shadow-xl rounded-lg border border-gray-200"
+      >
+        <!-- Current State -->
+        <div class="flex items-center mb-4">
+          <span class="text-custom-gray text-sm font-medium mr-2"
+            >Current State</span
+          >
+          <span
+            id="currentState"
+            class="bg-custom-purple text-white text-xs px-2.5 py-1 font-medium rounded-full"
+          >
+            Loading...
+          </span>
+        </div>
+
+        <!-- Transitions -->
+        <div class="flex items-center mb-4">
+          <span class="text-custom-gray text-sm font-medium block mr-6"
+            >Transitions</span
+          >
+          <div id="buttons" class="flex gap-2"></div>
+        </div>
+      </div>
+    </div>
+  </body>
+  <script src="js/index.js" defer></script>
+</html>

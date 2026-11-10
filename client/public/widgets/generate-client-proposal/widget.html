@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Generate Client Proposal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --green:#01814E; --mint:#F4F8F7; --ink:#333333; --line:#D5E3DD; --muted:#6b7a74; --red:#c0392b; --amber:#b7791f; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family: Helvetica, Arial, sans-serif; color:var(--ink); background:#fff; font-size:13px; }
+  header { display:flex; align-items:center; gap:14px; padding:12px 20px; border-bottom:2px solid var(--green); }
+  header img { height:32px; }
+  header h1 { font-size:16px; margin:0; color:var(--green); }
+  header .sub { color:var(--muted); font-size:12px; margin-top:2px; }
+  main { padding:12px 20px 90px; }
+  .row { display:flex; gap:10px; flex-wrap:nowrap; align-items:stretch; }
+  .card { background:var(--mint); border-left:4px solid var(--green); padding:8px 10px; border-radius:2px; min-width:0; flex:0 1 auto; }
+  .card.margin-box { max-width:230px; }
+  .card .k { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  .card .v { font-size:17px; font-weight:bold; margin-top:3px; white-space:nowrap; }
+  .lastprop { margin-left:auto; text-align:right; font-size:12px; color:var(--muted); line-height:1.4; }
+  .lastprop b { color:var(--ink); }
+  .card.internal .k::after { content:" (internal)"; text-transform:none; letter-spacing:0; }
+  .card select { font-size:13px; max-width:300px; padding:3px; border:1px solid var(--line); }
+  .margin-box input { width:70px; font-size:17px; font-weight:bold; border:1px solid var(--line); padding:2px 6px; }
+  .chip { display:inline-block; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:bold; }
+  .chip.ok { background:#e3f3ec; color:var(--green); }
+  .chip.warn { background:#fdf1dc; color:var(--amber); }
+  .chip.bad { background:#fbe3e0; color:var(--red); }
+  h2 { font-size:13px; color:var(--green); margin:16px 0 6px; text-transform:uppercase; letter-spacing:.05em; }
+  h2 .hint { text-transform:none; letter-spacing:0; }
+  table { width:100%; border-collapse:collapse; }
+  th { background:var(--green); color:#fff; text-align:left; font-size:12px; padding:6px; }
+  td { border-bottom:1px solid var(--line); padding:4px; vertical-align:top; }
+  td input, td textarea { width:100%; border:1px solid transparent; padding:5px; font:inherit; color:inherit; background:transparent; }
+  td input:focus, td textarea:focus, .sec textarea:focus, .sec input:focus { border-color:var(--green); outline:none; background:#fff; }
+  td textarea { resize:vertical; min-height:34px; }
+  td.num, th.num { text-align:right; white-space:nowrap; }
+  td.code { font-weight:bold; color:var(--green); width:44px; padding-top:9px; }
+  td.price { padding-top:9px; width:110px; }
+  td.cost { width:120px; }
+  td.cost input, td.rate input { text-align:right; }
+  td.rate { width:150px; }
+  td.rate .money { display:flex; align-items:center; border:1px solid var(--line); background:#fff; border-radius:2px; padding-left:6px; }
+  td.rate .money span { color:var(--muted); }
+  td.rate .money input { border:none; font-weight:bold; }
+  td.rate .money:focus-within { border-color:var(--green); }
+  td.area { width:190px; }
+  td.item { width:220px; }
+  td.tools { width:74px; white-space:nowrap; padding-top:7px; }
+  td.plain { padding-top:9px; }
+  .iconbtn { border:none; background:none; cursor:pointer; color:var(--muted); font-size:14px; padding:2px 4px; }
+  .iconbtn:hover { color:var(--green); }
+  .iconbtn.del:hover { color:var(--red); }
+  .btn { border:1px solid var(--green); background:#fff; color:var(--green); padding:8px 14px; font-weight:bold; cursor:pointer; border-radius:3px; font-size:13px; }
+  .btn.primary { background:var(--green); color:#fff; }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+  .btn.small { padding:5px 10px; font-size:12px; }
+  .msgs { margin-top:10px; }
+  .msg { padding:7px 10px; margin-bottom:6px; border-radius:2px; font-size:12px; }
+  .msg.err { background:#fbe3e0; color:var(--red); }
+  .msg.warn { background:#fdf1dc; color:var(--amber); }
+  .msg.info { background:var(--mint); color:var(--ink); }
+  footer { position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid var(--line); padding:10px 20px; display:flex; gap:10px; align-items:center; }
+  footer .spacer { flex:1; }
+  #status { color:var(--ink); font-size:12px; font-weight:bold; }
+  #lockNote { color:var(--red); font-size:12px; max-width:280px; text-align:right; }
+  #preview { width:100%; height:560px; border:1px solid var(--line); margin-top:10px; display:none; }
+  .hint { color:var(--muted); font-size:12px; font-weight:normal; }
+  .sec { display:grid; grid-template-columns: 220px 1fr; gap:6px 12px; align-items:start; }
+  .sec label { font-weight:bold; padding-top:6px; }
+  .sec input, .sec textarea { width:100%; border:1px solid var(--line); padding:6px; font:inherit; color:inherit; }
+  .sec textarea { min-height:70px; resize:vertical; }
+  details summary { cursor:pointer; color:var(--green); font-weight:bold; text-transform:uppercase; font-size:13px; letter-spacing:.05em; margin:16px 0 6px; }
+  .modal-back { position:fixed; inset:0; background:rgba(20,30,25,.45); display:none; align-items:center; justify-content:center; z-index:50; }
+  .modal-back.open { display:flex; }
+  .modal { background:#fff; width:440px; max-width:calc(100% - 32px); border-radius:6px; box-shadow:0 12px 40px rgba(0,0,0,.25); overflow:hidden; }
+  .modal h3 { margin:0; padding:14px 18px; background:var(--green); color:#fff; font-size:15px; }
+  .modal p { margin:0; padding:16px 18px 6px; line-height:1.5; font-size:13px; white-space:pre-line; max-height:360px; overflow:auto; }
+  .modal .actions { display:flex; justify-content:flex-end; gap:10px; padding:14px 18px 16px; }
+</style>
+</head>
+<body>
+<header>
+  <img id="logo" alt="Olio Group">
+  <div>
+    <h1>Generate Client Proposal</h1>
+    <div class="sub" id="title">Loading...</div>
+  </div>
+  <button class="btn primary" id="aiBtn" style="margin-left:24px">AI Bid Reader</button>
+  <div class="lastprop" id="lastProp"></div>
+</header>
+<main>
+  <div class="row">
+    <div class="card"><div class="k">Bid</div><div class="v"><select id="bidSel"></select></div></div>
+    <div class="card margin-box">
+      <div class="k">Margin %</div>
+      <div class="v"><input id="margin" type="number" step="any" min="0" max="90"> <span id="approvalChip"></span></div>
+      <div id="marginTools" style="display:none; margin-top:4px">
+        <button class="btn small" id="applyMargin">Apply to all rows</button>
+        <button class="btn small" id="restoreRates">Use current SOW rates</button>
+      </div>
+      <div class="hint" id="marginHint" style="margin-top:3px"></div>
+    </div>
+    <div class="card totals"><div class="k" id="clientTotalLabel">Client Total</div><div class="v" id="clientTotal">-</div></div>
+    <div class="card internal totals"><div class="k">Vendor Cost</div><div class="v" id="vendorTotal">-</div></div>
+    <div class="card internal totals"><div class="k">Gross Profit</div><div class="v" id="profit">-</div></div>
+    <div class="card internal" id="tierCard" style="display:none"><div class="k">Tier Margins</div><div class="v" id="tierRange">-</div></div>
+  </div>
+  <div class="msgs" id="msgs"></div>
+
+  <h2>Contract Pricing <span class="hint">(Type a client rate, e.g. a round number, or change Margin % to reprice every row. Client rates are written to the SOW only when you click Generate Client Proposal.)</span></h2>
+  <table>
+    <thead><tr><th>Service</th><th class="num">Vendor Price</th><th class="num">Client Rate</th><th class="num">Margin</th></tr></thead>
+    <tbody id="sowRows"></tbody>
+  </table>
+
+  <h2>Proposal Line Items <span class="hint" id="itemsHint">(what the client sees; parts and labor combined; same Area = grouped)</span></h2>
+  <table>
+    <thead><tr><th>#</th><th>Area</th><th>Item</th><th>Description</th><th class="num pricecol">Vendor Cost</th><th class="num pricecol">Client Price</th><th></th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+    <button class="btn small" id="addRow">+ Add item</button>
+    <button class="btn small" id="fromSow">Reset items from SOW rows</button>
+  </div>
+
+  <details id="textBox" open>
+    <summary>Proposal Text</summary>
+    <div class="sec">
+      <label for="t_title">Project Title</label><input id="t_title">
+      <label for="t_scope">Scope Reference</label><input id="t_scope" placeholder="Optional, shown in parentheses after the title">
+      <label for="t_loc">Project Location</label><input id="t_loc">
+      <label for="t_client">Client</label><input id="t_client">
+      <label for="t_summary">Project Summary</label><textarea id="t_summary" rows="5" placeholder="AI drafts this from the vendor proposal; edit as needed. Blank line = new paragraph."></textarea>
+      <label for="t_Work_Methods">Work Methods</label><textarea id="t_Work_Methods"></textarea>
+      <label for="t_Staffing_and_QC">Project Staffing and Quality Control</label><textarea id="t_Staffing_and_QC"></textarea>
+      <label for="t_Safety">Safety</label><textarea id="t_Safety"></textarea>
+      <label for="t_Schedule">Schedule</label><textarea id="t_Schedule"></textarea>
+      <label for="t_Clarifications">Clarifications and Assumptions</label><textarea id="t_Clarifications"></textarea>
+      <label for="t_Exclusions">Exclusions</label><textarea id="t_Exclusions"></textarea>
+    </div>
+    <div class="hint" style="margin-top:6px">One bullet per line. Text before a colon in the first few words prints in bold.</div>
+  </details>
+  <iframe id="preview" title="Proposal preview"></iframe>
+</main>
+<footer>
+  <span id="ver" style="color:#9aa;font-size:11px;margin-right:8px">v16</span><span id="status"></span>
+  <span class="spacer"></span>
+  <span id="lockNote"></span>
+  <button class="btn" id="approveBtn" style="display:none">Approve this pricing (Jim)</button>
+  <button class="btn" id="requestBtn" style="display:none">Request Jim's approval</button>
+  <button class="btn" id="saveBtn">Save draft</button>
+  <button class="btn" id="previewBtn">Preview PDF</button>
+  <button class="btn" id="downloadBtn" style="display:none">Download PDF</button>
+  <button class="btn primary" id="generateBtn">Generate Client Proposal</button>
+</footer>
+
+<div class="modal-back" id="modalBack" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal">
+    <h3 id="modalTitle"></h3>
+    <p id="modalBody"></p>
+    <div class="actions">
+      <button class="btn" id="modalCancel">Cancel</button>
+      <button class="btn primary" id="modalOk">Continue</button>
+    </div>
+  </div>
+</div>
+
+<script src="zoho-shim.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="logo.js?v=16"></script>
+<script src="proposal-pdf.js?v=16"></script>
+<script src="widget.js?v=16"></script>
+</body>
+</html>
